@@ -681,7 +681,9 @@ bool AuthSocket::_HandleLogonProof()
     {
         if (!VerifyVersion(lp.A, sizeof(lp.A), lp.crc_hash, false))
         {
-            sLog.Out(LOG_BASIC, LOG_LVL_BASIC, "[AuthChallenge] Account %s tried to login with modified client!", m_login.c_str());
+            sLog.Out(LOG_BASIC, LOG_LVL_BASIC,
+                "[AuthChallenge] Account %s tried to login with modified client! (build %u, ip %s)",
+                m_login.c_str(), m_build, get_remote_address().c_str());
             char data[2] = { CMD_AUTH_LOGON_PROOF, WOW_FAIL_VERSION_INVALID };
             send(data, sizeof(data));
             return true;
@@ -1400,7 +1402,9 @@ bool AuthSocket::VerifyVersion(uint8 const* a, int32 aLength, uint8 const* versi
     if (allowedClients.empty())
         return false;
 
-    if (!sConfig.GetBoolDefault("StrictVersionCheck", false))
+    bool strictVersionCheck = sConfig.GetBoolDefault("StrictVersionCheck", false);
+
+    if (!strictVersionCheck)
         return true;
 
     for (RealmBuildInfo const* pBuildInfo : allowedClients)
@@ -1427,6 +1431,15 @@ bool AuthSocket::VerifyVersion(uint8 const* a, int32 aLength, uint8 const* versi
 
         if (memcmp(versionProof, expectedHash.data(), expectedHash.size()) == 0)
             return true;
+
+        std::string expected = ByteArrayToHexStr(expectedHash.data(), expectedHash.size());
+        std::string provided = ByteArrayToHexStr(versionProof, expectedHash.size());
+
+        sLog.Out(LOG_BASIC, LOG_LVL_DEBUG,
+            "[AuthChallenge] Version proof mismatch for account '%s' (build %u.%u.%u%c / %u, os %u, platform %u, strict=%u, reconnect=%u). Client hash=%s, expected hash=%s",
+            m_login.c_str(), pBuildInfo->majorVersion, pBuildInfo->minorVersion, pBuildInfo->bugfixVersion,
+            pBuildInfo->hotfixVersion ? pBuildInfo->hotfixVersion : ' ', pBuildInfo->build, pBuildInfo->os,
+            pBuildInfo->platform, strictVersionCheck, isReconnect, provided.c_str(), expected.c_str());
     }
 
     return false;
