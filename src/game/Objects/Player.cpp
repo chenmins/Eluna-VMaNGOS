@@ -148,6 +148,9 @@ Player::Player(WorldSession* session) : Unit(),
 
     m_zoneUpdateId = 0;
     m_zoneUpdateTimer = 0;
+#ifdef ENABLE_ELUNA
+    m_elunaBoostTimer = 0;
+#endif
 
     m_areaUpdateId = 0;
 
@@ -1084,6 +1087,22 @@ void Player::Update(uint32 update_diff, uint32 p_time)
         return;
 
     UpdateMirrorTimers(update_diff);
+
+#ifdef ENABLE_ELUNA
+    if (Eluna* e = GetEluna())
+    {
+        uint32 boostInterval = sWorld.getConfig(CONFIG_UINT32_ELUNA_PLAYER_BOOST_INTERVAL);
+        if (boostInterval > 0)
+        {
+            m_elunaBoostTimer += p_time;
+            if (m_elunaBoostTimer >= boostInterval)
+            {
+                m_elunaBoostTimer = 0;
+                e->OnBoost(this);
+            }
+        }
+    }
+#endif
 
     //used to implement delayed far teleports
     SetCanDelayTeleport(true);

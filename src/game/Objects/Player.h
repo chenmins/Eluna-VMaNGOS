@@ -1581,6 +1581,9 @@ class Player final: public Unit
         uint32 m_zoneUpdateId;
         uint32 m_zoneUpdateTimer;
         uint32 m_areaUpdateId;
+#ifdef ENABLE_ELUNA
+        uint32 m_elunaBoostTimer;
+#endif
 
         // Current teleport data
         WorldLocation m_teleportDest;
