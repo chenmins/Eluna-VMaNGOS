@@ -38,6 +38,7 @@
 #include "GossipDef.h"
 #include "UpdateData.h"
 #include "Channel.h"
+#include "Config/Config.h"
 #ifdef ENABLE_ELUNA
 #include "LuaEngine.h"
 #endif /* ENABLE_ELUNA */
@@ -18081,9 +18082,6 @@ void Player::SetRestBonus(float rest_bonus_new)
     SetUInt32Value(PLAYER_REST_STATE_EXPERIENCE, uint32(m_restBonus));
 }
 
-// 是否开启瞬飞功能，1 为开启
-uint32 onfight = sConfig.GetIntDefault("PLAYER_EVENT_ON_FIGHT", 1);
-
 bool Player::ActivateTaxiPathTo(std::vector<uint32> const& nodes, Creature const* npc /*= nullptr*/, uint32 spellid /*= 0*/, bool nocheck)
 {
     if (nodes.size() < 2)
@@ -18337,17 +18335,21 @@ bool Player::ActivateTaxiPathTo(std::vector<uint32> const& nodes, Creature const
     GetSession()->SendPacket(&data);
 
 #ifdef ENABLE_ELUNA
-    bool onf = sEluna->OnFight(this);
-    onfight = sConfig.GetIntDefault("PLAYER_EVENT_ON_FIGHT", 1);
-    sLog.Out(LOG_BASIC, LOG_LVL_ERROR, "sEluna->PLAYER_EVENT_ON_FIGHT %s , onfight=%d, onf=%d ", GetName(), onfight, onf);
-    if (onfight == 1 && onf)
+    if (Eluna* e = GetEluna())
     {
-        TaxiNodesEntry const* lastnode = sObjectMgr.GetTaxiNodeEntry(nodes[nodes.size() - 1]);
-        m_taxi.ClearTaxiDestinations();
-        TeleportTo(lastnode->map_id, lastnode->x, lastnode->y, lastnode->z, GetOrientation());
+        uint32 onfight = sConfig.GetIntDefault("PLAYER_EVENT_ON_FIGHT", 1);
+        bool onf = e->OnFight(this);
+        sLog.Out(LOG_BASIC, LOG_LVL_ERROR, "Eluna PLAYER_EVENT_ON_FIGHT %s, onfight=%u, onf=%u", GetName(), onfight, onf);
+
+        if (onfight == 1 && onf)
+        {
+            TaxiNodesEntry const* lastnode = sObjectMgr.GetTaxiNodeEntry(nodes[nodes.size() - 1]);
+            m_taxi.ClearTaxiDestinations();
+            TeleportTo(lastnode->map_id, lastnode->x, lastnode->y, lastnode->z, GetOrientation());
+            return true;
+        }
     }
-    else
-        GetSession()->SendDoFlight(mount_display_id, sourcepath);
+    GetSession()->SendDoFlight(mount_display_id, sourcepath);
 #else
     GetSession()->SendDoFlight(mount_display_id, sourcepath);
 #endif
