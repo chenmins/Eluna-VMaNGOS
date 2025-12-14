@@ -514,6 +514,7 @@ public:
     void OnSpellCast(Player* pPlayer, Spell* pSpell, bool skipCheck);
     void OnLogin(Player* pPlayer);
     void OnLogout(Player* pPlayer);
+     void OnBoost(Player* pPlayer);
     void OnCreate(Player* pPlayer);
     void OnDelete(uint32 guid);
     void OnSave(Player* pPlayer);

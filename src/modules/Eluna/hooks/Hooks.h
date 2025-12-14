@@ -164,7 +164,7 @@ namespace Hooks
         // UNUSED                               =     52,       // (event, player)
         // UNUSED                               =     53,       // (event, player)
         PLAYER_EVENT_ON_QUEST_STATUS_CHANGED    =     54,       // (event, player, questId, status)
-
+ PLAYER_EVENT_ON_BOOST                   =     100,       // (event, player)
         PLAYER_EVENT_COUNT
     };
 
@@ -437,7 +437,8 @@ private:
         {Hooks::PLAYER_EVENT_ON_UPDATE_AREA,                    "on_update_area"},
         {Hooks::PLAYER_EVENT_ON_TRADE_INIT,                     "on_trade_init"},
         {Hooks::PLAYER_EVENT_ON_SEND_MAIL,                      "on_send_mail"},
-        {Hooks::PLAYER_EVENT_ON_QUEST_STATUS_CHANGED,           "on_quest_status_changed"}
+ {Hooks::PLAYER_EVENT_ON_BOOST,                          "on_boost"},
+ 	{Hooks::PLAYER_EVENT_ON_QUEST_STATUS_CHANGED,           "on_quest_status_changed"}
     };
 
     static constexpr EventEntry GuildEventsTable[] = {
