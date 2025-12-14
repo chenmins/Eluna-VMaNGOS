@@ -1704,9 +1704,7 @@ namespace LuaPlayer
 #else
         FactionEntry const* factionEntry = sFactionStore.LookupEntry(faction);
 #endif
-        if (factionEntry != nullptr)
-            player->GetReputationMgr().SetReputation(factionEntry, value);
-
+        player->GetReputationMgr().SetReputation(factionEntry, value);
         return 0;
     }
 
@@ -3160,7 +3158,7 @@ namespace LuaPlayer
         }
         else
         {
-#if ELUNA_EXPANSION == EXP_CATA
+#if ELUNA_EXPANSION != EXP_WOTLK
             player->DestroyItemCount(item, itemCount, true);
 #else
             player->DestroyItemCount(*item, itemCount, true);

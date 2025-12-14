@@ -335,7 +335,7 @@ namespace LuaGlobalFunctions
     int GetPlayerGUID(Eluna* E)
     {
         uint32 lowguid = E->CHECKVAL<uint32>(1);
-        E->Push(ObjectGuid::Create<HIGHGUID_PLAYER>(lowguid));
+        E->Push(MAKE_NEW_GUID(lowguid, 0, HIGHGUID_PLAYER));
         return 1;
     }
 
@@ -351,7 +351,7 @@ namespace LuaGlobalFunctions
     int GetItemGUID(Eluna* E)
     {
         uint32 lowguid = E->CHECKVAL<uint32>(1);
-        E->Push(ObjectGuid::Create<HIGHGUID_ITEM>(lowguid));
+        E->Push(MAKE_NEW_GUID(lowguid, 0, HIGHGUID_ITEM));
         return 1;
     }
 
@@ -370,7 +370,7 @@ namespace LuaGlobalFunctions
     {
         uint32 lowguid = E->CHECKVAL<uint32>(1);
         uint32 entry = E->CHECKVAL<uint32>(2);
-        E->Push(ObjectGuid::Create<HIGHGUID_GAMEOBJECT>(entry, lowguid));
+        E->Push(MAKE_NEW_GUID(lowguid, entry, HIGHGUID_GAMEOBJECT));
         return 1;
     }
 
@@ -389,7 +389,7 @@ namespace LuaGlobalFunctions
     {
         uint32 lowguid = E->CHECKVAL<uint32>(1);
         uint32 entry = E->CHECKVAL<uint32>(2);
-        E->Push(ObjectGuid::Create<HIGHGUID_UNIT>(entry, lowguid));
+        E->Push(MAKE_NEW_GUID(lowguid, entry, HIGHGUID_UNIT));
         return 1;
     }
 
@@ -1594,7 +1594,7 @@ namespace LuaGlobalFunctions
         int functionRef = luaL_ref(E->L, LUA_REGISTRYINDEX);
         if (functionRef != LUA_REFNIL && functionRef != LUA_NOREF)
         {
-            E->eventMgr->GetGlobalProcessor(GLOBAL_EVENTS)->AddEvent(functionRef, min, max, repeats);
+            E->eventMgr->globalProcessor->AddEvent(functionRef, min, max, repeats);
             E->Push(functionRef);
         }
         return 1;
@@ -1609,13 +1609,13 @@ namespace LuaGlobalFunctions
     int RemoveEventById(Eluna* E)
     {
         int eventId = E->CHECKVAL<int>(1);
-        bool all_Events = E->CHECKVAL<bool>(2, false);
+        bool all_Events = E->CHECKVAL<bool>(1, false);
 
         // not thread safe
         if (all_Events)
-            E->eventMgr->SetEventState(eventId, LUAEVENT_STATE_ABORT);
+            E->eventMgr->SetState(eventId, LUAEVENT_STATE_ABORT);
         else
-            E->eventMgr->GetGlobalProcessor(GLOBAL_EVENTS)->SetState(eventId, LUAEVENT_STATE_ABORT);
+            E->eventMgr->globalProcessor->SetState(eventId, LUAEVENT_STATE_ABORT);
         return 0;
     }
 
@@ -1630,9 +1630,9 @@ namespace LuaGlobalFunctions
 
         // not thread safe
         if (all_Events)
-            E->eventMgr->SetAllEventStates(LUAEVENT_STATE_ABORT);
+            E->eventMgr->SetStates(LUAEVENT_STATE_ABORT);
         else
-            E->eventMgr->GetGlobalProcessor(GLOBAL_EVENTS)->SetStates(LUAEVENT_STATE_ABORT);
+            E->eventMgr->globalProcessor->SetStates(LUAEVENT_STATE_ABORT);
         return 0;
     }
 
@@ -2043,7 +2043,7 @@ namespace LuaGlobalFunctions
             }
         }
 
-        Player* receiverPlayer = eObjectAccessor()FindPlayerByLowGUID(receiverGUIDLow);
+        Player* receiverPlayer = eObjectAccessor()FindPlayer(MAKE_NEW_GUID(receiverGUIDLow, 0, HIGHGUID_PLAYER));
         draft.SendMailTo(trans, MailReceiver(receiverPlayer, receiverGUIDLow), sender, MAIL_CHECK_MASK_NONE, delay);
         CharacterDatabase.CommitTransaction(trans);
 

@@ -765,15 +765,7 @@ namespace LuaWorldObject
         int functionRef = luaL_ref(E->L, LUA_REGISTRYINDEX);
         if (functionRef != LUA_REFNIL && functionRef != LUA_NOREF)
         {
-            ElunaEventProcessor* proc = obj->GetElunaEvents(E->GetBoundMapId());
-            if (!proc)
-            {
-                luaL_unref(E->L, LUA_REGISTRYINDEX, functionRef);
-                E->Push();
-                return 1;
-            }
-
-            proc->AddEvent(functionRef, min, max, repeats);
+            obj->GetElunaEvents(E->GetBoundMapId())->AddEvent(functionRef, min, max, repeats);
             E->Push(functionRef);
         }
         return 1;
@@ -787,12 +779,7 @@ namespace LuaWorldObject
     int RemoveEventById(Eluna* E, WorldObject* obj)
     {
         int eventId = E->CHECKVAL<int>(2);
-
-        ElunaEventProcessor* proc = obj->GetElunaEvents(E->GetBoundMapId());
-        if (!proc)
-            return 0;
-
-        proc->SetState(eventId, LUAEVENT_STATE_ABORT);
+        obj->GetElunaEvents(E->GetBoundMapId())->SetState(eventId, LUAEVENT_STATE_ABORT);
         return 0;
     }
 
@@ -801,11 +788,7 @@ namespace LuaWorldObject
      */
     int RemoveEvents(Eluna* E, WorldObject* obj)
     {
-        ElunaEventProcessor* proc = obj->GetElunaEvents(E->GetBoundMapId());
-        if (!proc)
-            return 0;
-
-        proc->SetStates(LUAEVENT_STATE_ABORT);
+        obj->GetElunaEvents(E->GetBoundMapId())->SetStates(LUAEVENT_STATE_ABORT);
         return 0;
     }
 
