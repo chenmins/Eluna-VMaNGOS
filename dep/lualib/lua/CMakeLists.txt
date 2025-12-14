@@ -39,10 +39,14 @@ FetchContent_Declare(
   URL      https://www.lua.org/ftp/lua-5.1.5.tar.gz
   URL_HASH SHA256=2640fc56a795f29d28ef15e13c34a47e223960b0240e8cb0a82d9b0738695333
 )
+#FetchContent_Declare(
+#  lua52
+#  URL      https://www.lua.org/ftp/lua-5.2.4.tar.gz
+#  URL_HASH SHA256=b9e2e4aad6789b3b63a056d442f7b39f0ecfca3ae0f1fc0ae4e9614401b69f4b
+#)
 FetchContent_Declare(
   lua52
-  URL      https://www.lua.org/ftp/lua-5.2.4.tar.gz
-  URL_HASH SHA256=b9e2e4aad6789b3b63a056d442f7b39f0ecfca3ae0f1fc0ae4e9614401b69f4b
+  SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/lua-5.2.4
 )
 FetchContent_Declare(
   lua53
