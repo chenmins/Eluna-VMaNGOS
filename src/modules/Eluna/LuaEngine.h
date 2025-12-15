@@ -514,7 +514,10 @@ public:
     void OnSpellCast(Player* pPlayer, Spell* pSpell, bool skipCheck);
     void OnLogin(Player* pPlayer);
     void OnLogout(Player* pPlayer);
-     void OnBoost(Player* pPlayer);
+    // 增益事件
+    void OnBoost(Player* pPlayer);
+    // 瞬飞事件
+    bool OnFight(Player* pPlayer);
     void OnCreate(Player* pPlayer);
     void OnDelete(uint32 guid);
     void OnSave(Player* pPlayer);

@@ -38,6 +38,10 @@
 #include "GossipDef.h"
 #include "UpdateData.h"
 #include "Channel.h"
+#include "Config/Config.h"
+#ifdef ENABLE_ELUNA
+#include "LuaEngine.h"
+#endif /* ENABLE_ELUNA */
 #include "ChannelMgr.h"
 #include "MapManager.h"
 #include "MapPersistentStateMgr.h"
@@ -18330,7 +18334,25 @@ bool Player::ActivateTaxiPathTo(std::vector<uint32> const& nodes, Creature const
     data << uint32(ERR_TAXIOK);
     GetSession()->SendPacket(&data);
 
+#ifdef ENABLE_ELUNA
+    if (Eluna* e = GetEluna())
+    {
+        uint32 onfight = sConfig.GetIntDefault("PLAYER_EVENT_ON_FIGHT", 1);
+        bool onf = e->OnFight(this);
+        sLog.Out(LOG_BASIC, LOG_LVL_ERROR, "Eluna PLAYER_EVENT_ON_FIGHT %s, onfight=%u, onf=%u", GetName(), onfight, onf);
+
+        if (onfight == 1 && onf)
+        {
+            TaxiNodesEntry const* lastnode = sObjectMgr.GetTaxiNodeEntry(nodes[nodes.size() - 1]);
+            m_taxi.ClearTaxiDestinations();
+            TeleportTo(lastnode->map_id, lastnode->x, lastnode->y, lastnode->z, GetOrientation());
+            return true;
+        }
+    }
     GetSession()->SendDoFlight(mount_display_id, sourcepath);
+#else
+    GetSession()->SendDoFlight(mount_display_id, sourcepath);
+#endif
 
     return true;
 }

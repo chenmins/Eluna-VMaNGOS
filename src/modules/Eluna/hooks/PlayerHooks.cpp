@@ -429,11 +429,20 @@ void Eluna::OnLogout(Player* pPlayer)
 }
 
 
+// 增益事件
 void Eluna::OnBoost(Player* pPlayer)
 {
- START_HOOK(PLAYER_EVENT_ON_BOOST);
-HookPush(pPlayer);
-CallAllFunctions(binding, key);
+    START_HOOK(PLAYER_EVENT_ON_BOOST);
+    HookPush(pPlayer);
+    CallAllFunctions(binding, key);
+}
+
+// 瞬飞事件
+bool Eluna::OnFight(Player* pPlayer)
+{
+    START_HOOK_WITH_RETVAL(PLAYER_EVENT_ON_FIGHT, true);
+    HookPush(pPlayer);
+    return CallAllFunctionsBool(binding, key, true);
 }
 
 
