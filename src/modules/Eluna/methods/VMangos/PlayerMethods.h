@@ -1747,7 +1747,8 @@ namespace LuaPlayer
     {
         bool apply = E->CHECKVAL<bool>(2, true);
 
-        player->SetFFAPvP(apply);
+        player->SetScriptFFAPvP(apply);
+        ELUNA_LOG_DEBUG("[Lua]: Player:SetFFA %s apply=%u area=%u map=%u", player->GetName(), apply, player->GetAreaId(), player->GetMapId());
         return 0;
     }
 
@@ -3442,6 +3443,7 @@ namespace LuaPlayer
         { "AdvanceAllSkills", &LuaPlayer::AdvanceAllSkills },
         { "AddLifetimeKills", &LuaPlayer::AddLifetimeKills },
         { "SetCoinage", &LuaPlayer::SetCoinage },
+        { "SetFFA", &LuaPlayer::SetFFA },
         { "SetBindPoint", &LuaPlayer::SetBindPoint },
         { "SetLifetimeKills", &LuaPlayer::SetLifetimeKills },
         { "SetGameMaster", &LuaPlayer::SetGameMaster },
@@ -3623,7 +3625,6 @@ namespace LuaPlayer
         { "GetRecruiterId", METHOD_REG_NONE }, // not implemented
         { "GetMailItem", METHOD_REG_NONE }, //not implemented in VMaNGOS
         { "SetMovement", METHOD_REG_NONE }, // not implemented
-        { "SetFFA", METHOD_REG_NONE }, // not implemented
         { "IsImmuneToEnvironmentalDamage", METHOD_REG_NONE }, // not implemented
         { "InRandomLfgDungeon", METHOD_REG_NONE }, // not implemented
         { "HasPendingBind", METHOD_REG_NONE }, // not implemented
