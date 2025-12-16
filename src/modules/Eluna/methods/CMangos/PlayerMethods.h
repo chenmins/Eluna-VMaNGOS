@@ -1987,7 +1987,7 @@ namespace LuaPlayer
     int SetFFA(Eluna* E, Player* player)
     {
         bool apply = E->CHECKVAL<bool>(2, true);
-        player->SetPvPFreeForAll(apply);
+        player->SetFFAPvP(apply);
         return 0;
     }
 

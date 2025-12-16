@@ -4,7 +4,7 @@
 
 ## 关键 API
 - `PLAYER_EVENT_ON_UPDATE_AREA`（事件 ID 47）会在玩家区域发生变化时触发，回调参数包含旧区域 ID 与新区域 ID，适合做区域级别的开关逻辑。
-- `Player:SetFFA(apply)`：直接调用核心的 `Player::SetPvPFreeForAll`，为玩家打开或关闭自由混战标志。
+- `Player:SetFFA(apply)`：调用核心的 `Player::SetFFAPvP`，为玩家打开或关闭自由混战标志。
 - `Unit:SetPvP(apply)`：为玩家（或任意 Unit）切换普通 PvP 标志，确保可以互相攻击。该方法由 `Unit` 绑定提供，玩家对象继承 `Unit`，因此可以直接用 `player:SetPvP(true/false)`（对应绑定在 `VMangos/UnitMethods.h` 中的 `LuaUnit::SetPvP`）。
 
 ## 示例脚本
