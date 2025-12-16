@@ -2319,6 +2319,21 @@ namespace LuaUnit
         return 0;
     }
 
+    int SetFFA(Eluna* E, Unit* unit)
+    {
+        bool apply = E->CHECKVAL<bool>(2, true);
+
+        if (Player* player = unit->ToPlayer())
+        {
+            player->SetFFAPvP(apply);
+            ELUNA_LOG_DEBUG("[Lua]: Unit:SetFFA %s apply=%u area=%u map=%u", player->GetName(), apply, player->GetAreaId(), player->GetMapId());
+        }
+        else
+            ELUNA_LOG_DEBUG("[Lua]: Unit:SetFFA ignored: target is not a player (entry=%u)", unit->GetEntry());
+
+        return 0;
+    }
+
     /*int RestoreDisplayId(Eluna* E, Unit* unit)
     {
         unit->RestoreDisplayId();
@@ -2519,6 +2534,7 @@ namespace LuaUnit
         { "SetConfused", &LuaUnit::SetConfused},
         { "SetFeared", &LuaUnit::SetFeared},
         { "SetPvP", &LuaUnit::SetPvP },
+        { "SetFFA", &LuaUnit::SetFFA },
         { "SetOwnerGUID", &LuaUnit::SetOwnerGUID },
         { "SetName", &LuaUnit::SetName },
         { "SetSheath", &LuaUnit::SetSheath },
@@ -2621,7 +2637,6 @@ namespace LuaUnit
         { "MoveJump", METHOD_REG_NONE },
         { "RemoveArenaAuras", METHOD_REG_NONE },
         { "IsOnVehicle", METHOD_REG_NONE },
-        { "SetFFA", METHOD_REG_NONE },
         { "SetSanctuary", METHOD_REG_NONE },
         { "SetCritterGUID", METHOD_REG_NONE },
 
