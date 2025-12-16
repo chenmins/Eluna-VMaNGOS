@@ -1747,7 +1747,7 @@ namespace LuaPlayer
     {
         bool apply = E->CHECKVAL<bool>(2, true);
 
-        player->SetFFAPvP(apply);
+        player->SetScriptFFAPvP(apply);
         ELUNA_LOG_DEBUG("[Lua]: Player:SetFFA %s apply=%u area=%u map=%u", player->GetName(), apply, player->GetAreaId(), player->GetMapId());
         return 0;
     }

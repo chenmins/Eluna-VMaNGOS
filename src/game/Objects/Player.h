@@ -228,6 +228,7 @@ struct PvPInfo
     bool inPvPEnforcedArea = false;
     bool inPvPCapturePoint = false;
     bool isPvPFlagCarrier = false;
+    bool scriptFFAPvP = false;
     uint32 timerPvPRemaining = 0;
     uint32 timerPvPContestedRemaining = 0;
 };
@@ -2203,6 +2204,8 @@ class Player final: public Unit
         void SetPvPDesired(bool state);
         bool IsFFAPvP() const { return HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_FFA_PVP); }
         void SetFFAPvP(bool state);
+        void SetScriptFFAPvP(bool state);
+        bool HasScriptFFAPvP() const { return pvpInfo.scriptFFAPvP; }
         bool IsInInterFactionMode() const;
 
         // todo: -maybe move UpdateDuelFlag+DuelComplete to independent DuelHandler.

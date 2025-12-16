@@ -6733,7 +6733,7 @@ void Player::UpdateArea(uint32 newArea)
     {
         // remove ffa flag only if not ffapvp realm
         // removal in sanctuaries and capitals is handled in zone update
-        if (IsFFAPvP() && !sWorld.IsFFAPvPRealm())
+        if (IsFFAPvP() && !sWorld.IsFFAPvPRealm() && !HasScriptFFAPvP())
             SetFFAPvP(false);
     }
 
@@ -17446,6 +17446,9 @@ void Player::SetPvPDesired(bool state)
 
 void Player::SetFFAPvP(bool state)
 {
+    if (!state)
+        pvpInfo.scriptFFAPvP = false;
+
     if (state)
         SetFlag(PLAYER_FLAGS, PLAYER_FLAGS_FFA_PVP);
     else
@@ -17453,6 +17456,12 @@ void Player::SetFFAPvP(bool state)
 
     if (GetGroup())
         SetGroupUpdateFlag(GROUP_UPDATE_FLAG_STATUS);
+}
+
+void Player::SetScriptFFAPvP(bool state)
+{
+    pvpInfo.scriptFFAPvP = state;
+    SetFFAPvP(state);
 }
 
 bool Player::IsInInterFactionMode() const

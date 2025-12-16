@@ -2325,7 +2325,7 @@ namespace LuaUnit
 
         if (Player* player = unit->ToPlayer())
         {
-            player->SetFFAPvP(apply);
+            player->SetScriptFFAPvP(apply);
             ELUNA_LOG_DEBUG("[Lua]: Unit:SetFFA %s apply=%u area=%u map=%u", player->GetName(), apply, player->GetAreaId(), player->GetMapId());
         }
         else
