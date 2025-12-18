@@ -325,7 +325,7 @@ void Item::LoadLootTradeData(uint32 expireTime, std::string const& eligibleGuids
     }
 }
 
-void Item::InitializeLootTradeData(Loot const& loot, Player const* owner)
+void Item::InitializeLootTradeData(Loot const& loot, Player* owner)
 {
     Map* map = owner ? owner->GetMap() : nullptr;
     if (!map || !map->IsRaid())

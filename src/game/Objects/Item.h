@@ -93,7 +93,7 @@ class Item : public Object
         bool CanBeTraded(Player const* target = nullptr);
         void SetInTrade(bool b = true) { mb_in_trade = b; }
         bool IsInTrade() const { return mb_in_trade; }
-        void InitializeLootTradeData(Loot const& loot, Player const* owner);
+        void InitializeLootTradeData(Loot const& loot, Player* owner);
 
         static bool IsFitToSpellRequirements(SpellEntry const* spellInfo, uint32 itemClass, uint32 itemSubClass, uint32 itemInventoryType);
         bool IsFitToSpellRequirements(SpellEntry const* spellInfo) const;
