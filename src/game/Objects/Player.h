@@ -58,7 +58,6 @@ class UpdateMask;
 class SpellCastTargets;
 class PlayerSocial;
 class TradeData;
-friend class Item;
 class DungeonPersistentState;
 class Spell;
 class Item;
@@ -741,6 +740,7 @@ struct ScheduledTeleportData
 class Player final: public Unit
 {
     friend class WorldSession;
+    friend class Item;
     friend void Item::AddToUpdateQueueOf(Player* player);
     friend void Item::RemoveFromUpdateQueueOf(Player* player);
     public:
