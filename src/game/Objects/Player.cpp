@@ -19965,7 +19965,7 @@ void Player::InitializeItemTradeTimer(Item* item, Loot const& loot)
     item->SetTradeTimeLimit(expireTime, this);
     AddItemDurations(item);
 
-    sLog.Out(LOG_BASIC, LOG_LVL_DETAIL, "Bind-on-pickup trade timer initialized: item %u (GUID %u) owner %s expires at %" MANGOS_UI64_FORMAT " with %zu participants", item->GetEntry(), item->GetGUIDLow(), GetName(), uint64(expireTime), participants.size());
+    sLog.Out(LOG_BASIC, LOG_LVL_DETAIL, "Bind-on-pickup trade timer initialized: item %u (GUID %u) owner %s expires at %llu with %zu participants", item->GetEntry(), item->GetGUIDLow(), GetName(), static_cast<unsigned long long>(expireTime), participants.size());
 }
 
 void Player::AddItemDurations(Item* item)
