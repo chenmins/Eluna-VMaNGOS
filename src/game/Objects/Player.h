@@ -58,6 +58,7 @@ class UpdateMask;
 class SpellCastTargets;
 class PlayerSocial;
 class TradeData;
+friend class Item;
 class DungeonPersistentState;
 class Spell;
 class Item;
