@@ -351,6 +351,11 @@ void Item::InitializeLootTradeData(Loot const& loot, Player* owner)
     SetState(ITEM_CHANGED, owner);
 }
 
+bool Item::HasActiveLootTradeWindow() const
+{
+    return HasLootTradeData() && !IsLootTradeExpired();
+}
+
 void Item::EnsureRaidLootTradeWindow(Player* owner)
 {
     if (HasLootTradeData() || !owner)
@@ -1069,6 +1074,7 @@ bool Item::CanBeTraded(Player const* target)
     bool hasLootTrade = HasLootTradeData();
     if (hasLootTrade && IsLootTradeExpired())
     {
+        SetBinding(true);
         ClearLootTradeData();
         hasLootTrade = false;
         if (owner)

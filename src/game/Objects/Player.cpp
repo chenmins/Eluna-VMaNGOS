@@ -10382,10 +10382,16 @@ Item* Player::_StoreItem(uint16 pos, Item* pItem, uint32 count, bool clone, bool
         if (!pItem)
             return nullptr;
 
+        bool deferBind = false;
         if (pItem->GetProto()->Bonding == BIND_WHEN_PICKED_UP ||
                 pItem->GetProto()->Bonding == BIND_QUEST_ITEM ||
                 (pItem->GetProto()->Bonding == BIND_WHEN_EQUIPPED && IsBagPos(pos)))
-            pItem->SetBinding(true);
+        {
+            if (Map* map = GetMap())
+                deferBind = map->IsRaid();
+            if (!deferBind)
+                pItem->SetBinding(true);
+        }
 
         if (bag == INVENTORY_SLOT_BAG_0)
         {
@@ -10428,10 +10434,16 @@ Item* Player::_StoreItem(uint16 pos, Item* pItem, uint32 count, bool clone, bool
     }
     else
     {
+        bool deferBind2 = false;
         if (pItem2->GetProto()->Bonding == BIND_WHEN_PICKED_UP ||
                 pItem2->GetProto()->Bonding == BIND_QUEST_ITEM ||
                 (pItem2->GetProto()->Bonding == BIND_WHEN_EQUIPPED && IsBagPos(pos)))
-            pItem2->SetBinding(true);
+        {
+            if (Map* map = GetMap())
+                deferBind2 = map->IsRaid();
+            if (!deferBind2)
+                pItem2->SetBinding(true);
+        }
 
         pItem2->SetCount(pItem2->GetCount() + count);
         if (IsInWorld() && update)

@@ -95,6 +95,7 @@ class Item : public Object
         bool IsInTrade() const { return mb_in_trade; }
         void InitializeLootTradeData(Loot const& loot, Player* owner);
         void EnsureRaidLootTradeWindow(Player* owner);
+        bool HasActiveLootTradeWindow() const;
 
         static bool IsFitToSpellRequirements(SpellEntry const* spellInfo, uint32 itemClass, uint32 itemSubClass, uint32 itemInventoryType);
         bool IsFitToSpellRequirements(SpellEntry const* spellInfo) const;
