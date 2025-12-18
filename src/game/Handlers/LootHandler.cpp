@@ -201,6 +201,8 @@ void WorldSession::HandleAutostoreLootItemOpcode(WorldPacket & recv_data)
             return;
         }
 
+        player->InitializeItemTradeTimer(newitem, *loot);
+
         if (qitem)
         {
             qitem->is_looted = true;
@@ -757,6 +759,7 @@ void WorldSession::HandleLootMasterGiveOpcode(WorldPacket& recv_data)
     // now move item from loot to target inventory
     if (Item* newitem = target->StoreNewItem(dest, item.itemid, true, item.randomPropertyId))
     {
+        target->InitializeItemTradeTimer(newitem, *pLoot);
         sLog.Player(this, LOG_LOOTS, LOG_LVL_BASIC,
             "Master loot %s gives %ux%u to %s [loot from %s]",
             _player->GetShortDescription().c_str(), item.count, item.itemid,
