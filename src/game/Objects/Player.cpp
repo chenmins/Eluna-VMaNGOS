@@ -4477,8 +4477,8 @@ void Player::DeleteFromDB(ObjectGuid playerGuid, uint32 accountId, bool updateRe
 
                     if (hasItems)
                     {
-                        // data needs to be at first place for Item::LoadFromDB      0               1                    2        3                      5        6               7                     8             9       10                           11         12
-                        std::unique_ptr<QueryResult> resultItems = CharacterDatabase.PQuery("SELECT `creator_guid`, `gift_creator_guid`, `count`, `duration`, `charges`, `flags`, `enchantments`, `random_property_id`, `durability`, `text`, `item_guid`, `item_instance`.`item_id`, `generated_loot` FROM `mail_items` JOIN `item_instance` ON `item_guid` = `guid` WHERE `mail_id`='%u'", mailId);
+                        // data needs to be at first place for Item::LoadFromDB      0               1                    2        3                      5        6               7                     8             9       10                           11         12              13                  14
+                        std::unique_ptr<QueryResult> resultItems = CharacterDatabase.PQuery("SELECT `creator_guid`, `gift_creator_guid`, `count`, `duration`, `charges`, `flags`, `enchantments`, `random_property_id`, `durability`, `text`, `item_guid`, `item_instance`.`item_id`, `generated_loot`, `loot_trade_expire`, `loot_trade_players` FROM `mail_items` JOIN `item_instance` ON `item_guid` = `guid` WHERE `mail_id`='%u'", mailId);
                         if (resultItems)
                         {
                             do
@@ -4496,7 +4496,7 @@ void Player::DeleteFromDB(ObjectGuid playerGuid, uint32 accountId, bool updateRe
                                 }
 
                                 Item* pItem = NewItemOrBag(itemProto);
-                                if (!pItem->LoadFromDB(itemGuidLow, playerGuid, fields2, itemId))
+                                if (!pItem->LoadFromDB(itemGuidLow, playerGuid, fields2, itemId, 13, 14))
                                 {
                                     pItem->FSetState(ITEM_REMOVED);
                                     pItem->SaveToDB();              // it also deletes item object !
@@ -15615,8 +15615,8 @@ void Player::LoadCorpse()
 
 bool Player::_LoadInventory(std::unique_ptr<QueryResult> result, uint32 timediff, bool& hasEpicMount)
 {
-    //       0             1                  2      3         4        5      6             7                   8           9     10   11    12         13              14
-    //SELECT creator_guid, gift_creator_guid, count, duration, charges, flags, enchantments, random_property_id, durability, text, bag, slot, item_guid, item_id, generated_loot
+    //       0             1                  2      3         4        5      6             7                   8           9     10   11    12         13              14               15                  16
+    //SELECT creator_guid, gift_creator_guid, count, duration, charges, flags, enchantments, random_property_id, durability, text, bag, slot, item_guid, item_id, generated_loot, loot_trade_expire, loot_trade_players
 
     if (result)
     {
@@ -15676,7 +15676,7 @@ bool Player::_LoadInventory(std::unique_ptr<QueryResult> result, uint32 timediff
              */
             item->SetGeneratedLoot(fields[14].GetBool());
 
-            if (!item->LoadFromDB(item_lowguid, GetObjectGuid(), fields, item_id))
+            if (!item->LoadFromDB(item_lowguid, GetObjectGuid(), fields, item_id, 15, 16))
             {
                 sLog.Out(LOG_BASIC, LOG_LVL_ERROR, "Player::_LoadInventory: Player %s has broken item (id: #%u) in inventory, deleted.", GetName(), item_id);
                 CharacterDatabase.PExecute("DELETE FROM `character_inventory` WHERE `item_guid` = '%u'", item_lowguid);
@@ -20686,6 +20686,8 @@ void Player::AutoStoreLoot(Loot& loot, bool broadcast, uint8 bag, uint8 slot)
 
         SendNotifyLootItemRemoved(i);
         Item* pItem = StoreNewItem(dest, lootItem->itemid, true, lootItem->randomPropertyId);
+        if (pItem)
+            pItem->InitializeLootTradeData(loot, this);
         SendNewItem(pItem, lootItem->count, false, false, broadcast);
     }
 }

@@ -366,6 +366,7 @@ struct Loot
     bool hasOverThresholdItem() const;
     bool IsAllowedLooter(ObjectGuid guid, bool doPersonalCheck = true) const;
     bool IsOriginalLooter(ObjectGuid guid) const { return IsAllowedLooter(guid, false); }
+    std::vector<ObjectGuid> const& GetAllowedLooters() const { return m_allowedLooters; }
 
     void FillNotNormalLootFor(Player* player);
 
