@@ -10422,6 +10422,7 @@ Item* Player::_StoreItem(uint16 pos, Item* pItem, uint32 count, bool clone, bool
 
         AddEnchantmentDurations(pItem);
         AddItemDurations(pItem);
+        pItem->EnsureRaidLootTradeWindow(this);
 
         return pItem;
     }

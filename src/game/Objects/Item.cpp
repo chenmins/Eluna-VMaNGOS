@@ -351,6 +351,37 @@ void Item::InitializeLootTradeData(Loot const& loot, Player* owner)
     SetState(ITEM_CHANGED, owner);
 }
 
+void Item::EnsureRaidLootTradeWindow(Player* owner)
+{
+    if (HasLootTradeData() || !owner)
+        return;
+
+    Map* map = owner->GetMap();
+    if (!map || !map->IsRaid())
+        return;
+
+    ItemPrototype const* proto = GetProto();
+    if (!proto || proto->Bonding != BIND_WHEN_PICKED_UP)
+        return;
+
+    m_lootTradeEligible.clear();
+    if (Group* group = owner->GetGroup())
+    {
+        for (GroupReference* itr = group->GetFirstMember(); itr != nullptr; itr = itr->next())
+        {
+            Player* member = itr->getSource();
+            if (member && member->IsInWorld() && member->GetMap() == map)
+                m_lootTradeEligible.push_back(member->GetObjectGuid());
+        }
+    }
+
+    if (m_lootTradeEligible.empty())
+        m_lootTradeEligible.push_back(owner->GetObjectGuid());
+
+    m_lootTradeExpiry = static_cast<uint32>(time(nullptr) + 2 * HOUR);
+    SetState(ITEM_CHANGED, owner);
+}
+
 void Item::SaveToDB()
 {
     uint32 guid = GetGUIDLow();

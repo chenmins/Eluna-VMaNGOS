@@ -175,6 +175,7 @@ class Item : public Object
         void ClearLootTradeData();
         void LoadLootTradeData(uint32 expireTime, std::string const& eligibleGuids, bool& need_save);
         std::string SerializeLootTradeEligible() const;
+        void EnsureRaidLootTradeWindow(Player* owner);
 
         bool generatedLoot;
         uint8 m_slot;
