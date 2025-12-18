@@ -325,6 +325,9 @@ void Item::UpdateDuration(Player* owner, uint32 diff)
         sLog.Out(LOG_BASIC, LOG_LVL_DEBUG, "Item %u (GUID: %u) trade timer expired for owner %s", GetEntry(), GetGUIDLow(), GetOwnerGuid().GetString().c_str());
         ClearTradeData(owner);
         tradeExpired = true;
+
+        if (!IsSoulBound())
+            SetBinding(true);
     }
 
     if (!GetUInt32Value(ITEM_FIELD_DURATION))
