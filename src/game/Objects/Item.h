@@ -94,6 +94,7 @@ class Item : public Object
         void SetInTrade(bool b = true) { mb_in_trade = b; }
         bool IsInTrade() const { return mb_in_trade; }
         void InitializeLootTradeData(Loot const& loot, Player* owner);
+        void EnsureRaidLootTradeWindow(Player* owner);
 
         static bool IsFitToSpellRequirements(SpellEntry const* spellInfo, uint32 itemClass, uint32 itemSubClass, uint32 itemInventoryType);
         bool IsFitToSpellRequirements(SpellEntry const* spellInfo) const;
@@ -175,7 +176,6 @@ class Item : public Object
         void ClearLootTradeData();
         void LoadLootTradeData(uint32 expireTime, std::string const& eligibleGuids, bool& need_save);
         std::string SerializeLootTradeEligible() const;
-        void EnsureRaidLootTradeWindow(Player* owner);
 
         bool generatedLoot;
         uint8 m_slot;
