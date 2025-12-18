@@ -19940,17 +19940,14 @@ void Player::InitializeItemTradeTimer(Item* item, Loot const& loot)
         }
     }
 
-    if (participants.empty())
+    if (Group* group = GetGroup())
     {
-        if (Group* group = GetGroup())
+        for (GroupReference* itr = group->GetFirstMember(); itr != nullptr; itr = itr->next())
         {
-            for (GroupReference* itr = group->GetFirstMember(); itr != nullptr; itr = itr->next())
+            if (Player* member = itr->getSource())
             {
-                if (Player* member = itr->getSource())
-                {
-                    if (member->GetMap() == map && member->GetInstanceId() == GetInstanceId())
-                        addParticipant(participants, member->GetObjectGuid());
-                }
+                if (member->GetMap() == map && member->GetInstanceId() == GetInstanceId())
+                    addParticipant(participants, member->GetObjectGuid());
             }
         }
     }
