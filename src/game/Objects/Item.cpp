@@ -28,6 +28,7 @@
 #include "Database/DatabaseEnv.h"
 #include "ItemEnchantmentMgr.h"
 #include "GuildMgr.h"
+#include <algorithm>
 #ifdef ENABLE_ELUNA
 #include "LuaEngine.h"
 #endif /* ENABLE_ELUNA */
@@ -198,6 +199,7 @@ Item::Item() : loot(nullptr)
     mb_in_trade = false;
     m_lootState = ITEM_LOOT_NONE;
     generatedLoot = false;
+    m_tradeExpire = 0;
 }
 
 bool Item::Create(uint32 guidlow, uint32 itemid, ObjectGuid ownerGuid)
@@ -236,6 +238,74 @@ void Item::RemoveFromWorld()
     Object::RemoveFromWorld();
 }
 
+void Item::LoadTradeData(uint64 expireTime, std::string const& participants)
+{
+    m_tradeExpire = expireTime;
+    m_tradeParticipants.clear();
+
+    if (!m_tradeExpire)
+        return;
+
+    Tokenizer tokens(participants, ' ');
+    for (auto const& token : tokens)
+    {
+        uint32 guidLow = uint32(atol(token));
+        if (!guidLow)
+            continue;
+
+        m_tradeParticipants.emplace_back(HIGHGUID_PLAYER, guidLow);
+    }
+}
+
+namespace
+{
+    void AppendUniqueParticipant(std::vector<ObjectGuid>& destination, ObjectGuid const& guid)
+    {
+        if (!guid)
+            return;
+
+        if (std::find(destination.begin(), destination.end(), guid) == destination.end())
+            destination.push_back(guid);
+    }
+}
+
+void Item::SetTradeParticipants(std::vector<ObjectGuid> const& participants, Player const* owner /*= nullptr*/)
+{
+    m_tradeParticipants.clear();
+    m_tradeParticipants.reserve(participants.size());
+
+    for (auto const& participant : participants)
+        AppendUniqueParticipant(m_tradeParticipants, participant);
+
+    if (owner)
+        SetState(ITEM_CHANGED, const_cast<Player*>(owner));
+    else
+        SetState(ITEM_CHANGED);
+}
+
+void Item::SetTradeTimeLimit(time_t expireTime, Player const* owner /*= nullptr*/)
+{
+    m_tradeExpire = expireTime;
+    if (owner)
+        SetState(ITEM_CHANGED, const_cast<Player*>(owner));
+    else
+        SetState(ITEM_CHANGED);
+}
+
+void Item::ClearTradeData(Player const* owner /*= nullptr*/)
+{
+    if (!HasTradeTimeLimit() && m_tradeParticipants.empty())
+        return;
+
+    m_tradeExpire = 0;
+    m_tradeParticipants.clear();
+
+    if (owner)
+        SetState(ITEM_CHANGED, const_cast<Player*>(owner));
+    else
+        SetState(ITEM_CHANGED);
+}
+
 #ifdef ENABLE_ELUNA
 bool Item::IsNotEmptyBag() const
 {
@@ -247,8 +317,22 @@ bool Item::IsNotEmptyBag() const
 
 void Item::UpdateDuration(Player* owner, uint32 diff)
 {
+    time_t now = time(nullptr);
+    bool tradeExpired = false;
+
+    if (HasTradeTimeLimit() && HasTradeTimeLimitExpired(now))
+    {
+        sLog.Out(LOG_BASIC, LOG_LVL_DEBUG, "Item %u (GUID: %u) trade timer expired for owner %s", GetEntry(), GetGUIDLow(), GetOwnerGuid().GetString().c_str());
+        ClearTradeData(owner);
+        tradeExpired = true;
+    }
+
     if (!GetUInt32Value(ITEM_FIELD_DURATION))
+    {
+        if (tradeExpired && !HasTradeTimeLimit() && owner)
+            owner->RemoveItemDurations(this);
         return;
+    }
 
     //sLog.Out(LOG_BASIC, LOG_LVL_DEBUG, "Item::UpdateDuration Item (Entry: %u Duration %u Diff %u)", GetEntry(), GetUInt32Value(ITEM_FIELD_DURATION), diff);
 
@@ -288,9 +372,9 @@ void Item::SaveToDB()
             static SqlStatementID updItem;
 
             SqlStatement stmt = (uState == ITEM_NEW) ?
-                                CharacterDatabase.CreateStatement(insItem, "REPLACE INTO `item_instance` (`item_id`, `owner_guid`, `creator_guid`, `gift_creator_guid`, `count`, `duration`, `charges`, `flags`, `enchantments`, `random_property_id`, `durability`, `text`, `generated_loot`, `guid`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+                                CharacterDatabase.CreateStatement(insItem, "REPLACE INTO `item_instance` (`item_id`, `owner_guid`, `creator_guid`, `gift_creator_guid`, `count`, `duration`, `charges`, `flags`, `enchantments`, `random_property_id`, `durability`, `text`, `generated_loot`, `trade_expire`, `trade_participants`, `guid`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
                                 :
-                                CharacterDatabase.CreateStatement(updItem, "UPDATE `item_instance` SET `item_id` = ?, `owner_guid` = ?, `creator_guid` = ?, `gift_creator_guid` = ?, `count` = ?, `duration` = ?, `charges` = ?, `flags` = ?, `enchantments` = ?, `random_property_id` = ?, `durability` = ?, `text` = ?, `generated_loot` = ? WHERE `guid` = ?");
+                                CharacterDatabase.CreateStatement(updItem, "UPDATE `item_instance` SET `item_id` = ?, `owner_guid` = ?, `creator_guid` = ?, `gift_creator_guid` = ?, `count` = ?, `duration` = ?, `charges` = ?, `flags` = ?, `enchantments` = ?, `random_property_id` = ?, `durability` = ?, `text` = ?, `generated_loot` = ?, `trade_expire` = ?, `trade_participants` = ? WHERE `guid` = ?");
             stmt.addUInt32(GetEntry());
             stmt.addUInt32(GetOwnerGuid().GetCounter());
             stmt.addUInt32(GetGuidValue(ITEM_FIELD_CREATOR).GetCounter());
@@ -318,6 +402,16 @@ void Item::SaveToDB()
             stmt.addUInt16(GetUInt32Value(ITEM_FIELD_DURABILITY));
             stmt.addUInt32(GetUInt32Value(ITEM_FIELD_ITEM_TEXT_ID));
             stmt.addUInt8(generatedLoot); // can't use bool, SQL ERROR: Using unsupported buffer type: 16  (parameter: 13), todo, maybe.
+            stmt.addUInt64(m_tradeExpire);
+
+            std::ostringstream ssParticipants;
+            for (std::vector<ObjectGuid>::const_iterator itr = m_tradeParticipants.begin(); itr != m_tradeParticipants.end(); ++itr)
+            {
+                if (itr != m_tradeParticipants.begin())
+                    ssParticipants << ' ';
+                ssParticipants << itr->GetCounter();
+            }
+            stmt.addString(ssParticipants.str());
             stmt.addUInt32(guid);
             stmt.Execute();
         }
@@ -392,8 +486,8 @@ void Item::SaveToDB()
 
 bool Item::LoadFromDB(uint32 guidLow, ObjectGuid ownerGuid, Field* fields, uint32 entry)
 {
-    //         0            1                  2      3         4        5      6             7                   8           9     10         11
-    // SELECT creator_guid, gift_creator_guid, count, duration, charges, flags, enchantments, random_property_id, durability, text, item_guid, item_id
+    //         0            1                  2      3         4        5      6             7                   8           9             10             11                   12
+    // SELECT creator_guid, gift_creator_guid, count, duration, charges, flags, enchantments, random_property_id, durability, text, generated_loot, trade_expire, trade_participants, ...
     // create item before any checks for store correct guid
     // and allow use "FSetState(ITEM_REMOVED); SaveToDB();" for deleting item from DB
     Object::_Create(guidLow, 0, HIGHGUID_ITEM);
@@ -405,6 +499,9 @@ bool Item::LoadFromDB(uint32 guidLow, ObjectGuid ownerGuid, Field* fields, uint3
     ItemPrototype const* proto = GetProto();
     if (!proto)
         return false;
+
+    generatedLoot = fields[10].GetBool();
+    LoadTradeData(fields[11].GetUInt64(), fields[12].GetString());
 
     // set owner (not if item is only loaded for gbank/auction/mail
     if (ownerGuid)
@@ -939,10 +1036,22 @@ bool Item::IsEquipped() const
     return !IsInBag() && m_slot < EQUIPMENT_SLOT_END;
 }
 
-bool Item::CanBeTraded() const
+bool Item::CanBeTraded(Player const* player) const
 {
+    time_t now = time(nullptr);
+    bool allowBoundTrade = false;
+
     if (IsSoulBound())
-        return false;
+    {
+        if (player && HasTradeTimeLimit() && !HasTradeTimeLimitExpired(now))
+        {
+            if (std::find(m_tradeParticipants.begin(), m_tradeParticipants.end(), player->GetObjectGuid()) != m_tradeParticipants.end())
+                allowBoundTrade = true;
+        }
+
+        if (!allowBoundTrade)
+            return false;
+    }
     if (IsBag() && (Player::IsBagPos(GetPos()) || !((Bag const*)this)->IsEmpty()))
         return false;
 
@@ -957,7 +1066,10 @@ bool Item::CanBeTraded() const
     if (HasGeneratedLoot())
         return false;
 
-    if (IsBoundByEnchant())
+    if (!allowBoundTrade && IsBoundByEnchant())
+        return false;
+
+    if (allowBoundTrade && HasTradeTimeLimitExpired(now))
         return false;
 
     return true;
@@ -1153,6 +1265,8 @@ Item* Item::CloneItem(uint32 count, Player const* player) const
     newItem->SetUInt32Value(ITEM_FIELD_DURATION,  GetUInt32Value(ITEM_FIELD_DURATION));
     newItem->SetItemRandomProperties(GetItemRandomPropertyId());
     newItem->generatedLoot = generatedLoot;
+    newItem->m_tradeExpire = m_tradeExpire;
+    newItem->m_tradeParticipants = m_tradeParticipants;
     return newItem;
 }
 

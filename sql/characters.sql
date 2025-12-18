@@ -712,6 +712,8 @@ CREATE TABLE IF NOT EXISTS `item_instance` (
   `durability` smallint(5) unsigned NOT NULL DEFAULT '0',
   `text` int(10) unsigned NOT NULL DEFAULT '0',
   `generated_loot` tinyint(4) DEFAULT '0',
+  `trade_expire` bigint(20) unsigned NOT NULL DEFAULT '0',
+  `trade_participants` text,
   PRIMARY KEY (`guid`),
   KEY `idx_owner_guid` (`owner_guid`),
   KEY `idx_itemEntry` (`item_id`)

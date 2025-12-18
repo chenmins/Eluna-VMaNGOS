@@ -214,17 +214,17 @@ void MasterPlayer::AddNewMailDeliverTime(time_t deliver_time)
 void MasterPlayer::LoadMailedItems(std::unique_ptr<QueryResult> result)
 {
     // data needs to be at first place for Item::LoadFromDB
-    // 0             1                  2      3         4        5      6             7                   8           9     10       11         12       13
-    // creator_guid, gift_creator_guid, count, duration, charges, flags, enchantments, random_property_id, durability, text, mail_id, item_guid, item_id, generated_loot
+    // 0             1                  2      3         4        5      6             7                   8           9              10             11                   12       13       14         15
+    // creator_guid, gift_creator_guid, count, duration, charges, flags, enchantments, random_property_id, durability, text, generated_loot, trade_expire, trade_participants, mail_id, item_guid, item_id
     if (!result)
         return;
 
     do
     {
         Field* fields = result->Fetch();
-        uint32 mail_id       = fields[10].GetUInt32();
-        uint32 itemGuidLow = fields[11].GetUInt32();
-        uint32 itemId = fields[12].GetUInt32();
+        uint32 mail_id       = fields[13].GetUInt32();
+        uint32 itemGuidLow = fields[14].GetUInt32();
+        uint32 itemId = fields[15].GetUInt32();
 
         Mail* mail = GetMail(mail_id);
         if (!mail)
@@ -243,13 +243,6 @@ void MasterPlayer::LoadMailedItems(std::unique_ptr<QueryResult> result)
         }
 
         Item *item = NewItemOrBag(proto);
-
-        /* 
-         * LoadFromDB is called from multiple places but with a different set of fields - this is workaround
-         * so I don't need to fix the mess of queries and probably break something until a later date
-         */
-        item->SetGeneratedLoot(fields[13].GetBool());
-
         if (!item->LoadFromDB(itemGuidLow, GetObjectGuid(), fields, itemId))
         {
             sLog.Out(LOG_BASIC, LOG_LVL_ERROR, "Player::_LoadMailedItems - Item in mail (%u) doesn't exist !!!! - item guid: %u, deleted from mail", mail->messageID, itemGuidLow);

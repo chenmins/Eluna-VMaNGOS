@@ -874,6 +874,7 @@ class Player final: public Unit
         void AddItemDurations(Item* item);
         void RemoveItemDurations(Item const* item);
         void SendItemDurations() const;
+        void InitializeItemTradeTimer(Item* item, Loot const& loot);
         uint32 CountFreeInventorySlots() const;
     public:
         Item* AddItem(uint32 itemId, uint32 count = 1);

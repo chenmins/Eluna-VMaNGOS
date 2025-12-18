@@ -58,6 +58,14 @@ class Item : public Object
         bool IsSoulBound() const { return HasFlag(ITEM_FIELD_FLAGS, ITEM_DYNFLAG_BOUND); }
         bool IsBindedNotWith(Player const* player) const;
         bool IsBoundByEnchant() const;
+        bool HasTradeTimeLimit() const { return m_tradeExpire != 0; }
+        bool HasTradeTimeLimitExpired(time_t now) const { return m_tradeExpire != 0 && now >= m_tradeExpire; }
+        time_t GetTradeTimeLimit() const { return m_tradeExpire; }
+        std::vector<ObjectGuid> const& GetTradeParticipants() const { return m_tradeParticipants; }
+        void SetTradeTimeLimit(time_t expireTime, Player const* owner = nullptr);
+        void SetTradeParticipants(std::vector<ObjectGuid> const& participants, Player const* owner = nullptr);
+        void LoadTradeData(uint64 expireTime, std::string const& participants);
+        void ClearTradeData(Player const* owner = nullptr);
         virtual void SaveToDB();
         virtual bool LoadFromDB(uint32 guidLow, ObjectGuid ownerGuid, Field* fields, uint32 entry);
         virtual void DeleteFromDB();
@@ -89,7 +97,7 @@ class Item : public Object
         bool IsNotEmptyBag() const;
 #endif
         bool IsBroken() const { return GetUInt32Value(ITEM_FIELD_MAXDURABILITY) > 0 && GetUInt32Value(ITEM_FIELD_DURABILITY) == 0; }
-        bool CanBeTraded() const;
+        bool CanBeTraded(Player const* player = nullptr) const;
         void SetInTrade(bool b = true) { mb_in_trade = b; }
         bool IsInTrade() const { return mb_in_trade; }
 
@@ -174,6 +182,8 @@ class Item : public Object
         int16 uQueuePos;
         bool mb_in_trade;                                   // true if item is currently in trade-window
         ItemLootUpdateState m_lootState;
+        uint64 m_tradeExpire;
+        std::vector<ObjectGuid> m_tradeParticipants;
 };
 
 #endif

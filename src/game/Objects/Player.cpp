@@ -20,6 +20,7 @@
  */
 
 #include <unordered_map>
+#include <algorithm>
 #include <cmath>
 #include <sstream>
 
@@ -4477,16 +4478,16 @@ void Player::DeleteFromDB(ObjectGuid playerGuid, uint32 accountId, bool updateRe
 
                     if (hasItems)
                     {
-                        // data needs to be at first place for Item::LoadFromDB      0               1                    2        3                      5        6               7                     8             9       10                           11         12
-                        std::unique_ptr<QueryResult> resultItems = CharacterDatabase.PQuery("SELECT `creator_guid`, `gift_creator_guid`, `count`, `duration`, `charges`, `flags`, `enchantments`, `random_property_id`, `durability`, `text`, `item_guid`, `item_instance`.`item_id`, `generated_loot` FROM `mail_items` JOIN `item_instance` ON `item_guid` = `guid` WHERE `mail_id`='%u'", mailId);
+                        // data needs to be at first place for Item::LoadFromDB
+                        std::unique_ptr<QueryResult> resultItems = CharacterDatabase.PQuery("SELECT `creator_guid`, `gift_creator_guid`, `count`, `duration`, `charges`, `flags`, `enchantments`, `random_property_id`, `durability`, `text`, `generated_loot`, `trade_expire`, `trade_participants`, `item_guid`, `item_instance`.`item_id` FROM `mail_items` JOIN `item_instance` ON `item_guid` = `guid` WHERE `mail_id`='%u'", mailId);
                         if (resultItems)
                         {
                             do
                             {
                                 Field* fields2 = resultItems->Fetch();
 
-                                uint32 itemGuidLow = fields2[10].GetUInt32();
-                                uint32 itemId = fields2[11].GetUInt32();
+                                uint32 itemGuidLow = fields2[13].GetUInt32();
+                                uint32 itemId = fields2[14].GetUInt32();
 
                                 ItemPrototype const* itemProto = sObjectMgr.GetItemPrototype(itemId);
                                 if (!itemProto)
@@ -11766,7 +11767,7 @@ void Player::UpdateItemDuration(uint32 time, bool realtimeonly)
         Item* item = *itr;
         ++itr;                                              // current element can be erased in UpdateDuration
 
-        if (!realtimeonly || (item->GetProto()->Flags & ITEM_FLAG_REAL_DURATION))
+        if (!realtimeonly || (item->GetProto()->Flags & ITEM_FLAG_REAL_DURATION) || item->HasTradeTimeLimit())
             item->UpdateDuration(this, time);
     }
 }
@@ -15615,8 +15616,8 @@ void Player::LoadCorpse()
 
 bool Player::_LoadInventory(std::unique_ptr<QueryResult> result, uint32 timediff, bool& hasEpicMount)
 {
-    //       0             1                  2      3         4        5      6             7                   8           9     10   11    12         13              14
-    //SELECT creator_guid, gift_creator_guid, count, duration, charges, flags, enchantments, random_property_id, durability, text, bag, slot, item_guid, item_id, generated_loot
+    //       0             1                  2      3         4        5      6             7                   8           9              10             11                   12     13   14    15         16
+    //SELECT creator_guid, gift_creator_guid, count, duration, charges, flags, enchantments, random_property_id, durability, text, generated_loot, trade_expire, trade_participants, bag, slot, item_guid, item_id
 
     if (result)
     {
@@ -15636,10 +15637,10 @@ bool Player::_LoadInventory(std::unique_ptr<QueryResult> result, uint32 timediff
         do
         {
             Field* fields = result->Fetch();
-            uint32 bag_guid     = fields[10].GetUInt32();
-            uint8  slot         = fields[11].GetUInt8();
-            uint32 item_lowguid = fields[12].GetUInt32();
-            uint32 item_id      = fields[13].GetUInt32();
+            uint32 bag_guid     = fields[13].GetUInt32();
+            uint8  slot         = fields[14].GetUInt8();
+            uint32 item_lowguid = fields[15].GetUInt32();
+            uint32 item_id      = fields[16].GetUInt32();
 
             ItemPrototype const* proto = sObjectMgr.GetItemPrototype(item_id);
 
@@ -15669,13 +15670,6 @@ bool Player::_LoadInventory(std::unique_ptr<QueryResult> result, uint32 timediff
             }
 
             Item* item = NewItemOrBag(proto);
-
-            /*
-             * LoadFromDB is called from multiple places but with a different set of fields - this is workaround
-             * so I don't need to fix the mess of queries and probably break something until a later date
-             */
-            item->SetGeneratedLoot(fields[14].GetBool());
-
             if (!item->LoadFromDB(item_lowguid, GetObjectGuid(), fields, item_id))
             {
                 sLog.Out(LOG_BASIC, LOG_LVL_ERROR, "Player::_LoadInventory: Player %s has broken item (id: #%u) in inventory, deleted.", GetName(), item_id);
@@ -19905,13 +19899,88 @@ void Player::RemoveItemDurations(Item const* item)
     }
 }
 
+void Player::InitializeItemTradeTimer(Item* item, Loot const& loot)
+{
+    if (!item)
+        return;
+
+    if (item->HasTradeTimeLimit())
+        return;
+
+    auto addParticipant = [](std::vector<ObjectGuid>& list, ObjectGuid const& guid)
+    {
+        if (!guid)
+            return;
+
+        if (std::find(list.begin(), list.end(), guid) == list.end())
+            list.push_back(guid);
+    };
+
+    ItemPrototype const* proto = item->GetProto();
+    if (!proto || proto->Bonding != BIND_WHEN_PICKED_UP)
+        return;
+
+    Map* map = GetMap();
+    if (!map || !map->Instanceable())
+        return;
+
+    std::vector<ObjectGuid> participants;
+    participants.reserve(loot.GetAllowedLooters().size() + 1);
+
+    auto const& allowedLooters = loot.GetAllowedLooters();
+    for (auto const& guid : allowedLooters)
+    {
+        if (!guid)
+            continue;
+
+        if (Player* participant = sObjectMgr.GetPlayer(guid))
+        {
+            if (participant->GetMap() == map && participant->GetInstanceId() == GetInstanceId())
+                addParticipant(participants, participant->GetObjectGuid());
+        }
+    }
+
+    if (participants.empty())
+    {
+        if (Group* group = GetGroup())
+        {
+            for (GroupReference* itr = group->GetFirstMember(); itr != nullptr; itr = itr->next())
+            {
+                if (Player* member = itr->getSource())
+                {
+                    if (member->GetMap() == map && member->GetInstanceId() == GetInstanceId())
+                        addParticipant(participants, member->GetObjectGuid());
+                }
+            }
+        }
+    }
+
+    addParticipant(participants, GetObjectGuid());
+
+    if (participants.empty())
+        return;
+
+    time_t expireTime = time(nullptr) + 2 * HOUR;
+    item->SetTradeParticipants(participants, this);
+    item->SetTradeTimeLimit(expireTime, this);
+    AddItemDurations(item);
+
+    sLog.Out(LOG_BASIC, LOG_LVL_DETAIL, "Bind-on-pickup trade timer initialized: item %u (GUID %u) owner %s expires at %" MANGOS_UI64_FORMAT " with %zu participants", item->GetEntry(), item->GetGUIDLow(), GetName(), uint64(expireTime), participants.size());
+}
+
 void Player::AddItemDurations(Item* item)
 {
-    if (item->GetUInt32Value(ITEM_FIELD_DURATION))
-    {
+    if (!item)
+        return;
+
+    if (!item->GetUInt32Value(ITEM_FIELD_DURATION) && !item->HasTradeTimeLimit())
+        return;
+
+    if (std::find(m_itemDuration.begin(), m_itemDuration.end(), item) == m_itemDuration.end())
         m_itemDuration.push_back(item);
+
+    if (item->GetUInt32Value(ITEM_FIELD_DURATION))
         item->SendTimeUpdate(this);
-    }
 }
 
 void Player::AutoUnequipWeaponsIfNeed()
@@ -20686,6 +20755,7 @@ void Player::AutoStoreLoot(Loot& loot, bool broadcast, uint8 bag, uint8 slot)
 
         SendNotifyLootItemRemoved(i);
         Item* pItem = StoreNewItem(dest, lootItem->itemid, true, lootItem->randomPropertyId);
+        InitializeItemTradeTimer(pItem, loot);
         SendNewItem(pItem, lootItem->count, false, false, broadcast);
     }
 }
