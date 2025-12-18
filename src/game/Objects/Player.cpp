@@ -19967,8 +19967,6 @@ void Player::InitializeItemTradeTimer(Item* item, Loot const& loot)
     time_t expireTime = time(nullptr) + 2 * HOUR;
     item->SetTradeParticipants(participants, this);
     item->SetTradeTimeLimit(expireTime, this);
-    if (!item->IsSoulBound())
-        item->SetBinding(true);
     AddItemDurations(item);
 
     sLog.Out(LOG_BASIC, LOG_LVL_DETAIL, "Bind-on-pickup trade timer initialized: item %u (GUID %u) owner %s expires at %llu with %zu participants", item->GetEntry(), item->GetGUIDLow(), GetName(), static_cast<unsigned long long>(expireTime), participants.size());
