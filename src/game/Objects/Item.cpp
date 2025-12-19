@@ -356,6 +356,33 @@ bool Item::HasActiveLootTradeWindow() const
     return HasLootTradeData() && !IsLootTradeExpired();
 }
 
+bool Item::CheckLootTradeAllowed(Player* actor, Player* target, bool sendErrorMessage)
+{
+    if (!HasLootTradeData())
+        return true;
+
+    if (IsLootTradeExpired())
+    {
+        SetBinding(true);
+        ClearLootTradeData();
+        if (Player* owner = GetOwner())
+            SetState(ITEM_CHANGED, owner);
+
+        if (actor && sendErrorMessage)
+            actor->GetSession()->SendNotification("The raid loot trade window for this item has expired.");
+        return false;
+    }
+
+    if (!target || !IsEligibleLootTrader(target))
+    {
+        if (actor && sendErrorMessage)
+            actor->GetSession()->SendNotification("You can only trade this item with players who participated in the raid loot kill.");
+        return false;
+    }
+
+    return true;
+}
+
 void Item::EnsureRaidLootTradeWindow(Player* owner)
 {
     if (HasLootTradeData() || !owner)
