@@ -10382,10 +10382,10 @@ Item* Player::_StoreItem(uint16 pos, Item* pItem, uint32 count, bool clone, bool
         if (!pItem)
             return nullptr;
 
-        bool deferBind = false;
-        if (pItem->GetProto()->Bonding == BIND_WHEN_PICKED_UP ||
+        bool deferBind = pItem->HasActiveLootTradeWindow();
+        if (!deferBind && (pItem->GetProto()->Bonding == BIND_WHEN_PICKED_UP ||
                 pItem->GetProto()->Bonding == BIND_QUEST_ITEM ||
-                (pItem->GetProto()->Bonding == BIND_WHEN_EQUIPPED && IsBagPos(pos)))
+                (pItem->GetProto()->Bonding == BIND_WHEN_EQUIPPED && IsBagPos(pos))))
         {
             if (Map* map = GetMap())
                 deferBind = map->IsRaid();
@@ -10434,10 +10434,10 @@ Item* Player::_StoreItem(uint16 pos, Item* pItem, uint32 count, bool clone, bool
     }
     else
     {
-        bool deferBind2 = false;
-        if (pItem2->GetProto()->Bonding == BIND_WHEN_PICKED_UP ||
+        bool deferBind2 = pItem2->HasActiveLootTradeWindow();
+        if (!deferBind2 && (pItem2->GetProto()->Bonding == BIND_WHEN_PICKED_UP ||
                 pItem2->GetProto()->Bonding == BIND_QUEST_ITEM ||
-                (pItem2->GetProto()->Bonding == BIND_WHEN_EQUIPPED && IsBagPos(pos)))
+                (pItem2->GetProto()->Bonding == BIND_WHEN_EQUIPPED && IsBagPos(pos))))
         {
             if (Map* map = GetMap())
                 deferBind2 = map->IsRaid();
