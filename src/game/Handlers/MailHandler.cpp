@@ -312,7 +312,7 @@ void WorldSession::HandleSendMailCallback(WorldSession::AsyncMailSendRequest* re
         }
 
         // prevent mailing raid loot that is still in its temporary trade window
-        if (item->HasLootTradeData())
+        if (item->HasActiveLootTradeWindow())
         {
             SendMailResult(0, MAIL_SEND, MAIL_ERR_INTERNAL_ERROR);
             return;
