@@ -576,6 +576,34 @@ void BattleGround::RewardReputationToTeam(uint32 factionId, uint32 reputation, T
     if (!factionEntry)
         return;
 
+    // Determine opposing faction for mirrored battleground reputations
+    uint32 oppositeFactionId = 0;
+    switch (factionId)
+    {
+        case 729:
+            oppositeFactionId = 730;
+            break;
+        case 730:
+            oppositeFactionId = 729;
+            break;
+        case 889:
+            oppositeFactionId = 890;
+            break;
+        case 890:
+            oppositeFactionId = 889;
+            break;
+        case 509:
+            oppositeFactionId = 510;
+            break;
+        case 510:
+            oppositeFactionId = 509;
+            break;
+        default:
+            break;
+    }
+
+    FactionEntry const* oppositeFactionEntry = oppositeFactionId ? sObjectMgr.GetFactionEntry(oppositeFactionId) : nullptr;
+
     for (const auto& itr : m_players)
     {
         Player* pPlayer = sObjectMgr.GetPlayer(itr.first);
@@ -593,7 +621,13 @@ void BattleGround::RewardReputationToTeam(uint32 factionId, uint32 reputation, T
         {
             int32 rep_change;
             rep_change = pPlayer->CalculateReputationGain(REPUTATION_SOURCE_SPELL, reputation, factionId);
-            pPlayer->GetReputationMgr().ModifyReputation(factionEntry, rep_change);
+            FactionEntry const* targetFaction = factionEntry;
+
+            // If the player's active team differs from their racial team, reward the mirrored faction instead
+            if (oppositeFactionEntry && pPlayer->GetTeam() != Player::TeamForRace(pPlayer->GetRace()))
+                targetFaction = oppositeFactionEntry;
+
+            pPlayer->GetReputationMgr().ModifyReputation(targetFaction, rep_change);
         }
     }
 }
@@ -1039,6 +1073,31 @@ void BattleGround::StartBattleGround()
 
 void BattleGround::AddPlayer(Player* pPlayer)
 {
+    // Enter battleground with team balancing to allow mixed factions
+    if (pPlayer->GetBGTeam() == TEAM_NONE)
+        pPlayer->SetBGTeam(pPlayer->GetTeam());
+
+    uint32 hordePlayers = GetPlayersCountByTeam(HORDE);
+    uint32 alliancePlayers = GetPlayersCountByTeam(ALLIANCE);
+
+    if (hordePlayers < alliancePlayers)
+    {
+        pPlayer->SetFactionForRace(RACE_ORC);
+        pPlayer->SetBGTeam(HORDE);
+    }
+    else if (hordePlayers > alliancePlayers)
+    {
+        pPlayer->SetFactionForRace(RACE_HUMAN);
+        pPlayer->SetBGTeam(ALLIANCE);
+    }
+    else
+    {
+        if (pPlayer->GetBGTeam() == HORDE)
+            pPlayer->SetFactionForRace(RACE_ORC);
+        else
+            pPlayer->SetFactionForRace(RACE_HUMAN);
+    }
+
     // score struct must be created in inherited class
 
     ObjectGuid guid = pPlayer->GetObjectGuid();
