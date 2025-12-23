@@ -18920,6 +18920,8 @@ void Player::OverrideTeamAndFactionForBattleGround(Team team)
         m_bgData.originalTeam = m_team;
         m_bgData.originalFactionTemplateId = GetFactionTemplateId();
         m_bgData.factionTemplateOverridden = true;
+
+        sLog.Out(LOG_BG, LOG_LVL_DEBUG, "PLAYER: storing original battleground team/faction for %s (team=%u, faction=%u)", GetName(), m_bgData.originalTeam, m_bgData.originalFactionTemplateId);
     }
 
     m_team = team;
@@ -18927,12 +18929,16 @@ void Player::OverrideTeamAndFactionForBattleGround(Team team)
     // Use default faction templates so reputation and visual flags align with the assigned BG team
     uint8 factionRace = (team == HORDE) ? RACE_ORC : RACE_HUMAN;
     SetFactionTemplateId(GetFactionForRace(factionRace));
+
+    sLog.Out(LOG_BG, LOG_LVL_DEBUG, "PLAYER: applied battleground override for %s (team=%u, faction=%u)", GetName(), m_team, GetFactionTemplateId());
 }
 
 void Player::RestoreTeamAndFactionAfterBattleGround()
 {
     if (!m_bgData.factionTemplateOverridden)
         return;
+
+    sLog.Out(LOG_BG, LOG_LVL_DEBUG, "PLAYER: restoring battleground override for %s (originalTeam=%u, originalFaction=%u)", GetName(), m_bgData.originalTeam, m_bgData.originalFactionTemplateId);
 
     m_team = m_bgData.originalTeam ? m_bgData.originalTeam : TeamForRace(GetRace());
 
@@ -18951,6 +18957,8 @@ void Player::LeaveBattleground(bool teleportToEntryPoint)
     //ClearUpdateMask(true);
     if (BattleGround* bg = GetBattleGround())
     {
+        sLog.Out(LOG_BG, LOG_LVL_DEBUG, "PLAYER: LeaveBattleground called for %s (bgInstance=%u, bgType=%u, teleport=%u, team=%u, bgTeam=%u)", GetName(), bg->GetInstanceID(), bg->GetTypeID(), teleportToEntryPoint, GetTeam(), GetBGTeam());
+
         // nor more Waiting to Resurrect
         RemoveAurasDueToSpell(2584);
 

@@ -934,6 +934,18 @@ void BattleGround::BlockMovement(Player* pPlayer)
 void BattleGround::RemovePlayerAtLeave(ObjectGuid guid, bool transport, bool sendPacket)
 {
     Team team = GetPlayerTeam(guid);
+    Player* pPlayer = sObjectMgr.GetPlayer(guid);
+
+    if (team == TEAM_NONE && pPlayer)
+    {
+        team = pPlayer->GetBGTeam();
+        if (team == TEAM_NONE)
+            team = Player::TeamForRace(pPlayer->GetRace());
+
+        sLog.Out(LOG_BG, LOG_LVL_ERROR, "BATTLEGROUND: RemovePlayerAtLeave missing team for %s, defaulting to %u (BGTeam=%u)", pPlayer->GetName(), team, pPlayer->GetBGTeam());
+    }
+
+    sLog.Out(LOG_BG, LOG_LVL_DEBUG, "BATTLEGROUND: RemovePlayerAtLeave start for %s (team=%u, transport=%u, sendPacket=%u, players=%zu)", guid.GetString().c_str(), team, transport, sendPacket, m_players.size());
     bool participant = false;
     // Remove from lists/maps
     BattleGroundPlayerMap::iterator itr = m_players.find(guid);
@@ -943,6 +955,9 @@ void BattleGround::RemovePlayerAtLeave(ObjectGuid guid, bool transport, bool sen
         m_players.erase(itr);
         // check if the player was a participant of the match, or only entered through gm command (goname)
         participant = true;
+
+        if (m_players.empty())
+            sLog.Out(LOG_BG, LOG_LVL_DEBUG, "BATTLEGROUND: RemovePlayerAtLeave detected last player %s leaving instance %u", guid.GetString().c_str(), GetInstanceID());
     }
 
     BattleGroundScoreMap::iterator itr2 = m_playerScores.find(guid);
@@ -951,8 +966,6 @@ void BattleGround::RemovePlayerAtLeave(ObjectGuid guid, bool transport, bool sen
         delete itr2->second;                                // delete player's score
         m_playerScores.erase(itr2);
     }
-
-    Player* pPlayer = sObjectMgr.GetPlayer(guid);
 
     // should remove spirit of redemption
     if (pPlayer && pPlayer->HasAuraType(SPELL_AURA_SPIRIT_OF_REDEMPTION))
@@ -1017,6 +1030,8 @@ void BattleGround::RemovePlayerAtLeave(ObjectGuid guid, bool transport, bool sen
         pPlayer->SetBattleGroundId(0, BATTLEGROUND_TYPE_NONE);  // We're not in BG.
         // reset destination bg team
         pPlayer->SetBGTeam(TEAM_NONE);
+
+        sLog.Out(LOG_BG, LOG_LVL_DEBUG, "BATTLEGROUND: RemovePlayerAtLeave finish for %s (team=%u, remainingPlayers=%zu)", guid.GetString().c_str(), team, m_players.size());
 
         if (transport && pPlayer->FindMap() == GetBgMap())
             pPlayer->TeleportToBGEntryPoint();
@@ -1091,6 +1106,8 @@ void BattleGround::AddPlayer(Player* pPlayer)
         targetTeam = ALLIANCE;
         pPlayer->SetBGTeam(ALLIANCE);
     }
+
+    sLog.Out(LOG_BG, LOG_LVL_DEBUG, "BATTLEGROUND: AddPlayer balancing %s (queuedTeam=%u, targetTeam=%u, counts H:%u A:%u)", pPlayer->GetName(), pPlayer->GetBGTeam(), targetTeam, hordePlayers, alliancePlayers);
 
     pPlayer->OverrideTeamAndFactionForBattleGround(targetTeam);
 

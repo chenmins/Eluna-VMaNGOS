@@ -168,6 +168,8 @@ GroupQueueInfo* BattleGroundQueue::AddGroup(Player* leader, Group* grp, BattleGr
     if (queuedHordePlayers != queuedAlliancePlayers)
         ginfo->groupTeam = (queuedAlliancePlayers > queuedHordePlayers) ? HORDE : ALLIANCE;
 
+    sLog.Out(LOG_BG, LOG_LVL_DEBUG, "BATTLEGROUND: AddGroup queue balance for leader %s (team=%u -> %u, queued H:%u A:%u)", leader->GetName(), leader->GetTeam(), ginfo->groupTeam, queuedHordePlayers, queuedAlliancePlayers);
+
     ginfo->desiredInstanceId         = instanceId;
     ginfo->players.clear();
 
