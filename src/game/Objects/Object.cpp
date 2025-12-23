@@ -2282,7 +2282,7 @@ void WorldObject::SetMap(Map* map)
     m_instanceId = map->GetInstanceId();
 
 #ifdef ENABLE_ELUNA
-    // always reset Map events, then recreate the Map events procesor if Eluna is enabled for the mapAdd commentMore actions
+    // always reset Map events, then recreate the Map events procesor if Eluna is enabled for the map
     auto& events = GetElunaEvents(m_mapId);
     if (events)
         events.reset();
@@ -2302,6 +2302,18 @@ void WorldObject::SetMap(Map* map)
     // Order is important, must be done after m_currMap is set
     SetZoneScript();
 }
+
+#ifdef ENABLE_ELUNA
+void WorldObject::ClearElunaEventProcessors()
+{
+    // Reset both map-level and world-level processors while their Eluna owners are still valid.
+    if (elunaMapEvents)
+        elunaMapEvents.reset();
+
+    if (elunaWorldEvents)
+        elunaWorldEvents.reset();
+}
+#endif
 
 Map* WorldObject::GetMap() const
 {

@@ -18974,6 +18974,16 @@ void Player::LeaveBattleground(bool teleportToEntryPoint)
             else
                 AddAura(26013, 0, this);               // Deserter
         }
+
+#ifdef ENABLE_ELUNA
+        // Clear any Eluna processors tied to the soon-to-be-destroyed battleground map before teleporting out.
+        if (FindMap() == bg->GetBgMap())
+        {
+            sLog.Out(LOG_BG, LOG_LVL_DEBUG, "PLAYER: clearing battleground Eluna processors for %s before leaving BG %u", GetName(), bg->GetInstanceID());
+            ClearElunaEventProcessors();
+        }
+#endif
+
         bg->RemovePlayerAtLeave(GetObjectGuid(), teleportToEntryPoint, true);
         sLog.Out(LOG_BG, LOG_LVL_DETAIL, "[%u,%u]: %s:%u [%u:%s] leaves",
                  bg->GetMapId(), bg->GetInstanceID(),
