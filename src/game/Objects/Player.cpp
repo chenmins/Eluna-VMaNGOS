@@ -18910,6 +18910,42 @@ void Player::SetBattleGroundEntryPoint(Player const* leader /*= nullptr*/, bool 
     m_bgData.m_needSave = true;
 }
 
+void Player::OverrideTeamAndFactionForBattleGround(Team team)
+{
+    if (team == TEAM_NONE)
+        return;
+
+    if (!m_bgData.factionTemplateOverridden)
+    {
+        m_bgData.originalTeam = m_team;
+        m_bgData.originalFactionTemplateId = GetFactionTemplateId();
+        m_bgData.factionTemplateOverridden = true;
+    }
+
+    m_team = team;
+
+    // Use default faction templates so reputation and visual flags align with the assigned BG team
+    uint8 factionRace = (team == HORDE) ? RACE_ORC : RACE_HUMAN;
+    SetFactionTemplateId(GetFactionForRace(factionRace));
+}
+
+void Player::RestoreTeamAndFactionAfterBattleGround()
+{
+    if (!m_bgData.factionTemplateOverridden)
+        return;
+
+    m_team = m_bgData.originalTeam ? m_bgData.originalTeam : TeamForRace(GetRace());
+
+    if (m_bgData.originalFactionTemplateId)
+        SetFactionTemplateId(m_bgData.originalFactionTemplateId);
+    else
+        SetFactionForRace(GetRace());
+
+    m_bgData.originalTeam = TEAM_NONE;
+    m_bgData.originalFactionTemplateId = 0;
+    m_bgData.factionTemplateOverridden = false;
+}
+
 void Player::LeaveBattleground(bool teleportToEntryPoint)
 {
     //ClearUpdateMask(true);
@@ -18939,7 +18975,7 @@ void Player::LeaveBattleground(bool teleportToEntryPoint)
     }
 
     // Restore the player's original faction template after leaving the battleground
-    SetFactionForRace(GetRace());
+    RestoreTeamAndFactionAfterBattleGround();
 }
 
 bool Player::CanJoinToBattleground() const

@@ -1080,23 +1080,19 @@ void BattleGround::AddPlayer(Player* pPlayer)
     uint32 hordePlayers = GetPlayersCountByTeam(HORDE);
     uint32 alliancePlayers = GetPlayersCountByTeam(ALLIANCE);
 
+    Team targetTeam = pPlayer->GetBGTeam();
     if (hordePlayers < alliancePlayers)
     {
-        pPlayer->SetFactionForRace(RACE_ORC);
+        targetTeam = HORDE;
         pPlayer->SetBGTeam(HORDE);
     }
     else if (hordePlayers > alliancePlayers)
     {
-        pPlayer->SetFactionForRace(RACE_HUMAN);
+        targetTeam = ALLIANCE;
         pPlayer->SetBGTeam(ALLIANCE);
     }
-    else
-    {
-        if (pPlayer->GetBGTeam() == HORDE)
-            pPlayer->SetFactionForRace(RACE_ORC);
-        else
-            pPlayer->SetFactionForRace(RACE_HUMAN);
-    }
+
+    pPlayer->OverrideTeamAndFactionForBattleGround(targetTeam);
 
     // score struct must be created in inherited class
 

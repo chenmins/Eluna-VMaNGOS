@@ -696,6 +696,11 @@ struct BGData
 
     Team bgTeam = TEAM_NONE;                                // What side the player will be added to, saved
 
+    // Original team/faction info to restore after cross-faction battlegrounds
+    Team originalTeam = TEAM_NONE;
+    uint32 originalFactionTemplateId = 0;
+    bool factionTemplateOverridden = false;
+
     WorldLocation joinPos;                                  // From where player entered BG, saved
 
     bool m_needSave = false;                                // true, if saved to DB fields modified after prev. save (marked as "saved" above)
@@ -2346,6 +2351,9 @@ class Player final: public Unit
         WorldLocation const& GetBattleGroundEntryPoint() const { return m_bgData.joinPos; }
         void SetBattleGroundEntryPoint(uint32 mapId, float x, float y, float z, float orientation);
         void SetBattleGroundEntryPoint(Player const* leader = nullptr, bool queuedAtBGPortal = false);
+
+        void OverrideTeamAndFactionForBattleGround(Team team);
+        void RestoreTeamAndFactionAfterBattleGround();
 
         void SetBGTeam(Team team) { m_bgData.bgTeam = team; m_bgData.m_needSave = true; }
         Team GetBGTeam() const { return m_bgData.bgTeam ? m_bgData.bgTeam : GetTeam(); }
