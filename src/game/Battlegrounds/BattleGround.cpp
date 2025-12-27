@@ -576,33 +576,37 @@ void BattleGround::RewardReputationToTeam(uint32 factionId, uint32 reputation, T
     if (!factionEntry)
         return;
 
-    // Determine opposing faction for mirrored battleground reputations
-    uint32 oppositeFactionId = 0;
-    switch (factionId)
+    FactionEntry const* oppositeFactionEntry = nullptr;
+    if (sWorld.getConfig(CONFIG_BOOL_BATTLEGROUND_MIXED_FACTION))
     {
-        case 729:
-            oppositeFactionId = 730;
-            break;
-        case 730:
-            oppositeFactionId = 729;
-            break;
-        case 889:
-            oppositeFactionId = 890;
-            break;
-        case 890:
-            oppositeFactionId = 889;
-            break;
-        case 509:
-            oppositeFactionId = 510;
-            break;
-        case 510:
-            oppositeFactionId = 509;
-            break;
-        default:
-            break;
-    }
+        // Determine opposing faction for mirrored battleground reputations
+        uint32 oppositeFactionId = 0;
+        switch (factionId)
+        {
+            case 729:
+                oppositeFactionId = 730;
+                break;
+            case 730:
+                oppositeFactionId = 729;
+                break;
+            case 889:
+                oppositeFactionId = 890;
+                break;
+            case 890:
+                oppositeFactionId = 889;
+                break;
+            case 509:
+                oppositeFactionId = 510;
+                break;
+            case 510:
+                oppositeFactionId = 509;
+                break;
+            default:
+                break;
+        }
 
-    FactionEntry const* oppositeFactionEntry = oppositeFactionId ? sObjectMgr.GetFactionEntry(oppositeFactionId) : nullptr;
+        oppositeFactionEntry = oppositeFactionId ? sObjectMgr.GetFactionEntry(oppositeFactionId) : nullptr;
+    }
 
     for (const auto& itr : m_players)
     {
@@ -1088,28 +1092,31 @@ void BattleGround::StartBattleGround()
 
 void BattleGround::AddPlayer(Player* pPlayer)
 {
-    // Enter battleground with team balancing to allow mixed factions
     if (pPlayer->GetBGTeam() == TEAM_NONE)
         pPlayer->SetBGTeam(pPlayer->GetTeam());
 
-    uint32 hordePlayers = GetPlayersCountByTeam(HORDE);
-    uint32 alliancePlayers = GetPlayersCountByTeam(ALLIANCE);
-
-    Team targetTeam = pPlayer->GetBGTeam();
-    if (hordePlayers < alliancePlayers)
+    if (sWorld.getConfig(CONFIG_BOOL_BATTLEGROUND_MIXED_FACTION))
     {
-        targetTeam = HORDE;
-        pPlayer->SetBGTeam(HORDE);
-    }
-    else if (hordePlayers > alliancePlayers)
-    {
-        targetTeam = ALLIANCE;
-        pPlayer->SetBGTeam(ALLIANCE);
-    }
+        // Enter battleground with team balancing to allow mixed factions
+        uint32 hordePlayers = GetPlayersCountByTeam(HORDE);
+        uint32 alliancePlayers = GetPlayersCountByTeam(ALLIANCE);
 
-    sLog.Out(LOG_BG, LOG_LVL_DEBUG, "BATTLEGROUND: AddPlayer balancing %s (queuedTeam=%u, targetTeam=%u, counts H:%u A:%u)", pPlayer->GetName(), pPlayer->GetBGTeam(), targetTeam, hordePlayers, alliancePlayers);
+        Team targetTeam = pPlayer->GetBGTeam();
+        if (hordePlayers < alliancePlayers)
+        {
+            targetTeam = HORDE;
+            pPlayer->SetBGTeam(HORDE);
+        }
+        else if (hordePlayers > alliancePlayers)
+        {
+            targetTeam = ALLIANCE;
+            pPlayer->SetBGTeam(ALLIANCE);
+        }
 
-    pPlayer->OverrideTeamAndFactionForBattleGround(targetTeam);
+        sLog.Out(LOG_BG, LOG_LVL_DEBUG, "BATTLEGROUND: AddPlayer balancing %s (queuedTeam=%u, targetTeam=%u, counts H:%u A:%u)", pPlayer->GetName(), pPlayer->GetBGTeam(), targetTeam, hordePlayers, alliancePlayers);
+
+        pPlayer->OverrideTeamAndFactionForBattleGround(targetTeam);
+    }
 
     // score struct must be created in inherited class
 
