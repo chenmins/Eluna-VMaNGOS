@@ -1389,16 +1389,8 @@ void Player::ResetAutoHealTracking(uint32 nowMs)
 
 void Player::LogAutoHealIncident(std::string const& details) const
 {
-    if (!LogsDatabase)
-        return;
-
-    static SqlStatementID insertLog;
-    SqlStatement logStmt = LogsDatabase.CreateStatement(insertLog,
-        "INSERT INTO `logs_behavior` (`account`, `detection`, `data`) VALUES (?, ?, ?)");
-    logStmt.addUInt32(GetSession()->GetAccountId());
-    logStmt.addString("AutoHeal");
-    logStmt.addString(details);
-    logStmt.Execute();
+    if (GetSession())
+        sLog.Player(GetSession(), LOG_ANTICHEAT, "AutoHeal", LOG_LVL_MINIMAL, "%s", details.c_str());
 }
 
 void Player::UpdateAutoHealTracking(Unit const* target)
