@@ -2363,6 +2363,7 @@ class Player final: public Unit
         void OnDisconnected();
         void RelocateToLastClientPosition();
         void GetSafePosition(float &x, float &y, float &z, GenericTransport const* onTransport = nullptr) const override;
+        void UpdateAutoHealTracking(Unit const* target);
 
         /*********************************************************/
         /***                 PACKET BROADCASTER                ***/
@@ -2382,6 +2383,17 @@ class Player final: public Unit
         typedef std::unordered_map< uint32 /*mapId*/, InstancePlayerBind > BoundInstancesMap;
 
     private:
+        void ResetAutoHealTracking(uint32 nowMs);
+        void LogAutoHealIncident(std::string const& details) const;
+
+        uint32 m_autoHealWindowStartMs = 0;
+        uint32 m_autoHealCastCount = 0;
+        uint32 m_autoHealTargetSwitchCount = 0;
+        uint32 m_autoHealLastTargetSwitchMs = 0;
+        uint32 m_autoHealRapidSwitchCount = 0;
+        uint32 m_autoHealViolationCount = 0;
+        ObjectGuid m_autoHealLastTargetGuid = ObjectGuid();
+
         bool   m_enableInstanceSwitch;
         bool   m_smartInstanceRebind;
         uint32 m_homebindTimer;
