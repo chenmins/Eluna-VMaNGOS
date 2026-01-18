@@ -38,7 +38,7 @@
 #include "ScriptMgr.h"
 #include "Util.h"
 #include "Anticheat.h"
-#include "Config.h"
+#include "Config/Config.h"
 #include "Creature.h"
 #include "Cell.h"
 #include "CellImpl.h"
