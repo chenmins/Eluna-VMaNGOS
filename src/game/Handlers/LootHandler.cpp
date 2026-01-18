@@ -45,6 +45,8 @@
 #include "GridNotifiers.h"
 #include "GridNotifiersImpl.h"
 
+#include <limits>
+
 #ifdef ENABLE_ELUNA
 #include "LuaEngine.h"
 #endif /* ENABLE_ELUNA */
