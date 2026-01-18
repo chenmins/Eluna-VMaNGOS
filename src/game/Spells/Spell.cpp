@@ -5482,6 +5482,9 @@ void Spell::TakeAmmo()
     if (!pCaster)
         return;
 
+    // Disable ammunition consumption for all ranged attacks
+    return;
+
     // Some ranged attacks dont take any ammo
     switch (m_spellInfo->Id)
     {
