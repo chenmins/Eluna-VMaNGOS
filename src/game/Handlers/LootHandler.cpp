@@ -46,6 +46,7 @@
 #include "GridNotifiersImpl.h"
 
 #include <limits>
+#include <string>
 
 #ifdef ENABLE_ELUNA
 #include "LuaEngine.h"
@@ -501,6 +502,9 @@ void WorldSession::HandleLootOpcode(WorldPacket& recv_data)
                 Loot* mainLoot = &mainCreature->loot;
                 uint32 corpseCount = 0;
                 uint32 totalGold = mainLoot->gold;
+                uint32 mergedGold = 0;
+                uint32 mergedItemCount = 0;
+                std::string mergedCreatures;
 
                 // Merge loot from nearby corpses
                 for (auto itr = nearbyCorpses.begin(); itr != nearbyCorpses.end() && corpseCount < maxCorpses; ++itr)
@@ -510,15 +514,27 @@ void WorldSession::HandleLootOpcode(WorldPacket& recv_data)
                         continue;
 
                     Loot* sourceLoot = &creature->loot;
+                    uint32 sourceGold = sourceLoot->gold;
+                    uint32 sourceItemCount = sourceLoot->items.size();
+
+                    // Skip corpses with no loot
+                    if (sourceGold == 0 && sourceItemCount == 0)
+                        continue;
+
+                    // Track creature name for feedback
+                    if (!mergedCreatures.empty())
+                        mergedCreatures += ", ";
+                    mergedCreatures += creature->GetName();
 
                     // Merge gold with overflow protection
-                    if (sourceLoot->gold > 0)
+                    if (sourceGold > 0)
                     {
                         // Check if adding would overflow
-                        if (totalGold > std::numeric_limits<uint32>::max() - sourceLoot->gold)
+                        if (totalGold > std::numeric_limits<uint32>::max() - sourceGold)
                             totalGold = std::numeric_limits<uint32>::max(); // Cap at maximum
                         else
-                            totalGold += sourceLoot->gold;
+                            totalGold += sourceGold;
+                        mergedGold += sourceGold;
                     }
 
                     // Copy items to avoid dangling references after source is cleared
@@ -528,6 +544,7 @@ void WorldSession::HandleLootOpcode(WorldPacket& recv_data)
                             break;
                         // push_back will copy the item
                         mainLoot->items.push_back(item);
+                        mergedItemCount++;
                     }
 
                     // Clear the source loot
@@ -540,6 +557,33 @@ void WorldSession::HandleLootOpcode(WorldPacket& recv_data)
 
                 // Update merged gold
                 mainLoot->gold = totalGold;
+
+                // Send feedback message to player if any loot was merged
+                if (corpseCount > 0)
+                {
+                    std::string message = "|cff00ff00[AoE Loot]|r Merged loot from " + 
+                                         std::to_string(corpseCount) + " corpse(s): " + mergedCreatures;
+                    
+                    if (mergedGold > 0)
+                    {
+                        uint32 gold = mergedGold / 10000;
+                        uint32 silver = (mergedGold % 10000) / 100;
+                        uint32 copper = mergedGold % 100;
+                        
+                        message += " | Gold: ";
+                        if (gold > 0)
+                            message += std::to_string(gold) + "g ";
+                        if (silver > 0)
+                            message += std::to_string(silver) + "s ";
+                        if (copper > 0)
+                            message += std::to_string(copper) + "c";
+                    }
+                    
+                    if (mergedItemCount > 0)
+                        message += " | Items: " + std::to_string(mergedItemCount);
+                    
+                    _player->PSendSysMessage("%s", message.c_str());
+                }
             }
         }
     }
