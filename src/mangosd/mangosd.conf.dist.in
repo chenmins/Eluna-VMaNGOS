@@ -3115,4 +3115,42 @@ Eluna.OnlyOnMaps = ""
 Eluna.ScriptPath = "./lua_scripts"
 Eluna.RequirePaths = ""
 Eluna.RequireCPaths = ""
+
+###################################################################################################################
+#    AOE LOOT SETTINGS
+#
+#    AoELoot.Enable
+#        Enable or disable the Area of Effect (AoE) loot feature
+#        When enabled, players can loot multiple nearby corpses at once
+#        Default: 1 (Enabled)
+#                 0 (Disabled)
+#
+#    AoELoot.Message
+#        Shows a message to players on login about AoE loot feature
+#        Default: 1 (Enabled)
+#                 0 (Disabled)
+#
+#    AoELoot.Range
+#        Maximum range (in yards) to search for nearby corpses to loot
+#        Default: 55.0
+#        Range:   5.0 - 100.0
+#        Note:    Values outside this range will be clamped to the limits
+#
+#    AoELoot.Group
+#        Enables AoE loot when the player is in a group
+#        Default: 1 (Enabled, AoE loot works in groups)
+#                 0 (Disabled, AoE loot only works when solo)
+#
+#    AoELoot.MaxCorpses
+#        Maximum number of nearby corpses to merge into loot window
+#        Default: 10
+#        Range:   1 - 20
+#        Note:    Higher values may affect performance
+#
+###################################################################################################################
+AoELoot.Enable = 1
+AoELoot.Message = 1
+AoELoot.Range = 55.0
+AoELoot.Group = 1
+AoELoot.MaxCorpses = 10
 Eluna.ReloadSecurityLevel = 3

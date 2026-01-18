@@ -1,0 +1,59 @@
+########################################
+# AoE Loot Feature Configuration
+########################################
+#
+# This configuration file controls the Area of Effect (AoE) 
+# loot feature which allows players to automatically loot 
+# multiple nearby corpses when looting one creature.
+#
+########################################
+
+#
+#    AoELoot.Enable
+#        Description: Enables/Disables the AoE loot feature
+#        Default:     1 - (Enabled)
+#        Values:      0 - (Disabled)
+#                     1 - (Enabled)
+#
+
+AoELoot.Enable = 1
+
+#
+#    AoELoot.Message
+#        Description: Shows a message to players on login about AoE loot feature
+#        Default:     1 - (Enabled)
+#        Values:      0 - (Disabled)
+#                     1 - (Enabled)
+#
+
+AoELoot.Message = 1
+
+#
+#    AoELoot.Range
+#        Description: Maximum range (in yards) to search for nearby corpses to loot
+#        Default:     55.0
+#        Range:       5.0 - 100.0
+#        Note:        Values outside this range will be clamped to the limits
+#
+
+AoELoot.Range = 55.0
+
+#
+#    AoELoot.Group
+#        Description: Enables AoE loot when the player is in a group
+#        Default:     1 - (Enabled)
+#        Values:      0 - (Disabled, AoE loot only works when solo)
+#                     1 - (Enabled, AoE loot works in groups)
+#
+
+AoELoot.Group = 1
+
+#
+#    AoELoot.MaxCorpses
+#        Description: Maximum number of nearby corpses to merge into loot window
+#        Default:     10
+#        Range:       1 - 20
+#        Note:        Higher values may affect performance
+#
+
+AoELoot.MaxCorpses = 10

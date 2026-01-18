@@ -38,10 +38,80 @@
 #include "ScriptMgr.h"
 #include "Util.h"
 #include "Anticheat.h"
+#include "Config.h"
+#include "Creature.h"
+#include "Cell.h"
+#include "CellImpl.h"
+#include "GridNotifiers.h"
+#include "GridNotifiersImpl.h"
 
 #ifdef ENABLE_ELUNA
 #include "LuaEngine.h"
 #endif /* ENABLE_ELUNA */
+
+// Helper class for finding lootable dead creatures in range
+namespace MaNGOS
+{
+    class AllLootableDeadCreaturesInRange
+    {
+    public:
+        AllLootableDeadCreaturesInRange(WorldObject const* pObject, Player const* pPlayer, float fMaxRange)
+            : m_pObject(pObject), m_pPlayer(pPlayer), m_fRange(fMaxRange) {}
+
+        bool operator()(Creature* pCreature)
+        {
+            if (!pCreature || pCreature->IsAlive())
+                return false;
+
+            // Check if within range
+            if (!m_pObject->IsWithinDist(pCreature, m_fRange, false))
+                return false;
+
+            // Check if creature has lootable flag
+            if (!pCreature->HasFlag(UNIT_DYNAMIC_FLAGS, UNIT_DYNFLAG_LOOTABLE))
+                return false;
+
+            // Check if player can loot this creature
+            if (!pCreature->HasLootRecipient())
+                return false;
+
+            // Check if this player or their group can loot
+            Player* lootRecipient = pCreature->GetLootRecipient();
+            if (!lootRecipient)
+                return false;
+
+            // Allow if player is the loot recipient
+            if (lootRecipient == m_pPlayer)
+                return true;
+
+            // Allow if player is in same group as loot recipient
+            if (Group const* group = lootRecipient->GetGroup())
+            {
+                if (group->IsMember(m_pPlayer->GetObjectGuid()))
+                    return true;
+            }
+
+            return false;
+        }
+
+    private:
+        WorldObject const* m_pObject;
+        Player const* m_pPlayer;
+        float m_fRange;
+    };
+}
+
+// Helper function to get nearby lootable dead creatures
+static void GetNearbyLootableCorpses(std::list<Creature*>& corpseList, Player* player, Creature* excludeCreature, float range)
+{
+    MaNGOS::AllLootableDeadCreaturesInRange check(player, player, range);
+    MaNGOS::CreatureListSearcher<MaNGOS::AllLootableDeadCreaturesInRange> searcher(corpseList, check);
+    Cell::VisitGridObjects(player, searcher, range);
+
+    // Remove the main creature being looted from the list
+    if (excludeCreature)
+        corpseList.remove(excludeCreature);
+}
 
 void WorldSession::HandleAutostoreLootItemOpcode(WorldPacket & recv_data)
 {
@@ -394,6 +464,76 @@ void WorldSession::HandleLootOpcode(WorldPacket& recv_data)
 
     if (_player->IsNonMeleeSpellCasted())
         _player->InterruptNonMeleeSpells(false);
+
+    // AoE Loot feature - merge nearby corpses
+    if (guid.IsCreature() && sConfig.GetBoolDefault("AoELoot.Enable", true))
+    {
+        // Check if player is in group and group loot is disabled
+        if (_player->GetGroup() && !sConfig.GetBoolDefault("AoELoot.Group", true))
+        {
+            // If in group and AoELoot.Group is disabled, just send normal loot
+            GetPlayer()->SendLoot(guid, LOOT_CORPSE);
+            return;
+        }
+
+        Creature* mainCreature = _player->GetMap()->GetCreature(guid);
+        if (mainCreature && !mainCreature->IsAlive() && 
+            mainCreature->HasFlag(UNIT_DYNAMIC_FLAGS, UNIT_DYNFLAG_LOOTABLE))
+        {
+            // Get configuration values
+            float lootRange = sConfig.GetFloatDefault("AoELoot.Range", 55.0f);
+            // Clamp range to reasonable values
+            if (lootRange < 5.0f) lootRange = 5.0f;
+            if (lootRange > 100.0f) lootRange = 100.0f;
+
+            uint32 maxCorpses = sConfig.GetIntDefault("AoELoot.MaxCorpses", 10);
+            if (maxCorpses < 1) maxCorpses = 1;
+            if (maxCorpses > 20) maxCorpses = 20;
+
+            // Find nearby lootable corpses
+            std::list<Creature*> nearbyCorpses;
+            GetNearbyLootableCorpses(nearbyCorpses, _player, mainCreature, lootRange);
+
+            if (!nearbyCorpses.empty())
+            {
+                Loot* mainLoot = &mainCreature->loot;
+                uint32 corpseCount = 0;
+                uint32 totalGold = mainLoot->gold;
+
+                // Merge loot from nearby corpses
+                for (auto itr = nearbyCorpses.begin(); itr != nearbyCorpses.end() && corpseCount < maxCorpses; ++itr)
+                {
+                    Creature* creature = *itr;
+                    if (!creature || creature->loot.isLooted())
+                        continue;
+
+                    Loot* sourceLoot = &creature->loot;
+
+                    // Merge gold (with overflow check)
+                    if (sourceLoot->gold > 0 && totalGold < (std::numeric_limits<uint32>::max() - sourceLoot->gold))
+                        totalGold += sourceLoot->gold;
+
+                    // Merge regular items (check space limit)
+                    for (auto& item : sourceLoot->items)
+                    {
+                        if (mainLoot->items.size() >= MAX_NR_LOOT_ITEMS)
+                            break;
+                        mainLoot->items.push_back(item);
+                    }
+
+                    // Clear the source loot
+                    sourceLoot->clear();
+                    creature->AllLootRemovedFromCorpse();
+                    creature->RemoveFlag(UNIT_DYNAMIC_FLAGS, UNIT_DYNFLAG_LOOTABLE);
+
+                    corpseCount++;
+                }
+
+                // Update merged gold
+                mainLoot->gold = totalGold;
+            }
+        }
+    }
 
     GetPlayer()->SendLoot(guid, LOOT_CORPSE);
 }
