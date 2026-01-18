@@ -511,15 +511,21 @@ void WorldSession::HandleLootOpcode(WorldPacket& recv_data)
 
                     Loot* sourceLoot = &creature->loot;
 
-                    // Merge gold (with overflow check)
-                    if (sourceLoot->gold > 0 && totalGold < (std::numeric_limits<uint32>::max() - sourceLoot->gold))
-                        totalGold += sourceLoot->gold;
+                    // Merge gold (with overflow check - cap at max instead of ignoring)
+                    if (sourceLoot->gold > 0)
+                    {
+                        if (totalGold <= (std::numeric_limits<uint32>::max() - sourceLoot->gold))
+                            totalGold += sourceLoot->gold;
+                        else
+                            totalGold = std::numeric_limits<uint32>::max(); // Cap at maximum
+                    }
 
-                    // Merge regular items (check space limit)
+                    // Copy items (not by reference) to avoid dangling references
                     for (auto& item : sourceLoot->items)
                     {
                         if (mainLoot->items.size() >= MAX_NR_LOOT_ITEMS)
                             break;
+                        // Create a copy of the item to avoid reference issues
                         mainLoot->items.push_back(item);
                     }
 

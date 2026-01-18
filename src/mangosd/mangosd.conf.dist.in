@@ -3115,6 +3115,7 @@ Eluna.OnlyOnMaps = ""
 Eluna.ScriptPath = "./lua_scripts"
 Eluna.RequirePaths = ""
 Eluna.RequireCPaths = ""
+Eluna.ReloadSecurityLevel = 3
 
 ###################################################################################################################
 #    AOE LOOT SETTINGS
@@ -3153,4 +3154,3 @@ AoELoot.Message = 1
 AoELoot.Range = 55.0
 AoELoot.Group = 1
 AoELoot.MaxCorpses = 10
-Eluna.ReloadSecurityLevel = 3
