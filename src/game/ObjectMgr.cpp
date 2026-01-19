@@ -4024,10 +4024,10 @@ void ObjectMgr::LoadItemPrototypes()
             sLog.Out(LOG_DBERROR, LOG_LVL_MINIMAL, "Item (Entry: %u) has wrong value in stackable (%u), replace by default 1.", i, proto->Stackable);
             const_cast<ItemPrototype*>(proto)->Stackable = 1;
         }
-        else if (proto->Stackable > 255)
+        else if (proto->Stackable > 5000)
         {
-            sLog.Out(LOG_DBERROR, LOG_LVL_MINIMAL, "Item (Entry: %u) has too large value in stackable (%u), replace by hardcoded upper limit (255).", i, proto->Stackable);
-            const_cast<ItemPrototype*>(proto)->Stackable = 255;
+            sLog.Out(LOG_DBERROR, LOG_LVL_MINIMAL, "Item (Entry: %u) has too large value in stackable (%u), replace by hardcoded upper limit (5000).", i, proto->Stackable);
+            const_cast<ItemPrototype*>(proto)->Stackable = 5000;
         }
 
         if (proto->ContainerSlots)
