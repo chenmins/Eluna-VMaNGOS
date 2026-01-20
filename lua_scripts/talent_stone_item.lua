@@ -24,6 +24,15 @@ local function OnUseTalentStone(event, player, item, target)
     -- Get current extra talent points / 获取当前额外天赋点
     local currentExtra = player:GetExtraTalentPoints()
     
+    -- Consume the item first if configured / 如果配置了先消耗物品
+    if CONSUME_ITEM then
+        local removed = player:RemoveItem(item, 1)
+        if not removed then
+            player:SendBroadcastMessage("Failed to consume item / 物品消耗失败")
+            return false
+        end
+    end
+    
     -- Add talent points / 增加天赋点
     player:ModifyExtraTalentPoints(TALENT_POINTS_PER_USE)
     
@@ -42,11 +51,6 @@ local function OnUseTalentStone(event, player, item, target)
     
     -- Play sound effect (optional) / 播放音效（可选）
     player:PlayDirectSound(8959) -- Level up sound / 升级音效
-    
-    -- Consume the item if configured / 如果配置了就消耗物品
-    if CONSUME_ITEM then
-        player:RemoveItem(item, 1)
-    end
     
     -- Prevent default item behavior / 阻止默认物品行为
     return false

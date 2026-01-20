@@ -51,11 +51,15 @@ local function OnAchievementComplete(event, player, achievement)
     end
 end
 
--- Register achievement event (event 8 = PLAYER_EVENT_ON_ACHIEVEMENT_COMPLETE)
+-- Register achievement event
 -- 注册成就事件
--- Note: VMangos may not have this hook, adjust based on your server version
--- 注意：VMangos 可能没有此钩子，请根据您的服务器版本进行调整
--- RegisterPlayerEvent(8, OnAchievementComplete)
+-- NOTE: Achievement completion hooks are not available in VMangos classic (1.12).
+--       This is an example for reference only. Use quest rewards or items instead.
+-- 注意：VMangos classic (1.12) 中不支持成就完成钩子。
+--       这只是一个参考示例。请改用任务奖励或物品。
+-- If your server version supports achievements:
+-- 如果您的服务器版本支持成就：
+-- RegisterPlayerEvent(8, OnAchievementComplete)  -- 8 = PLAYER_EVENT_ON_ACHIEVEMENT_COMPLETE
 
 -- ==============================================================================
 -- Example 2: Quest-based Talent Points / 基于任务的天赋点

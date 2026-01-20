@@ -20648,6 +20648,12 @@ uint32 Player::CalculateTalentsPoints() const
     return uint32(totalPoints * sWorld.getConfig(CONFIG_FLOAT_RATE_TALENT));
 }
 
+void Player::ModifyExtraTalentPoints(int32 points)
+{
+    int32 newValue = int32(m_extraTalentPoints) + points;
+    m_extraTalentPoints = newValue < 0 ? 0 : uint32(newValue);
+}
+
 struct DoPlayerLearnSpell
 {
     DoPlayerLearnSpell(Player& _player) : player(_player) {}

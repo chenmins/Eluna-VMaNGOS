@@ -1503,26 +1503,30 @@ namespace LuaPlayer
     /**
      * Sets the [Player]'s extra talent points from items/achievements
      *
+     * Updates the player's free talent points to reflect the change.
+     * 
      * @param uint32 talentPointAmt
      */
     int SetExtraTalentPoints(Eluna* E, Player* player)
     {
         uint32 points = E->CHECKVAL<uint32>(2);
         player->SetExtraTalentPoints(points);
-        player->UpdateFreeTalentPoints(false);
+        player->UpdateFreeTalentPoints(false);  // false = don't reset talents if over limit
         return 0;
     }
 
     /**
      * Modifies the [Player]'s extra talent points from items/achievements
      *
+     * Updates the player's free talent points to reflect the change.
+     * 
      * @param int32 talentPointAmt : positive to add, negative to remove
      */
     int ModifyExtraTalentPoints(Eluna* E, Player* player)
     {
         int32 points = E->CHECKVAL<int32>(2);
         player->ModifyExtraTalentPoints(points);
-        player->UpdateFreeTalentPoints(false);
+        player->UpdateFreeTalentPoints(false);  // false = don't reset talents if over limit
         return 0;
     }
 
