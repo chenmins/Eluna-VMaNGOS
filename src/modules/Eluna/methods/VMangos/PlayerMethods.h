@@ -1490,6 +1490,43 @@ namespace LuaPlayer
     }
 
     /**
+     * Returns the [Player]'s extra talent points from items/achievements
+     *
+     * @return uint32 extraTalentPoints
+     */
+    int GetExtraTalentPoints(Eluna* E, Player* player)
+    {
+        E->Push(player->GetExtraTalentPoints());
+        return 1;
+    }
+
+    /**
+     * Sets the [Player]'s extra talent points from items/achievements
+     *
+     * @param uint32 talentPointAmt
+     */
+    int SetExtraTalentPoints(Eluna* E, Player* player)
+    {
+        uint32 points = E->CHECKVAL<uint32>(2);
+        player->SetExtraTalentPoints(points);
+        player->UpdateFreeTalentPoints(false);
+        return 0;
+    }
+
+    /**
+     * Modifies the [Player]'s extra talent points from items/achievements
+     *
+     * @param int32 talentPointAmt : positive to add, negative to remove
+     */
+    int ModifyExtraTalentPoints(Eluna* E, Player* player)
+    {
+        int32 points = E->CHECKVAL<int32>(2);
+        player->ModifyExtraTalentPoints(points);
+        player->UpdateFreeTalentPoints(false);
+        return 0;
+    }
+
+    /**
      * Sets the [Player]s reputation amount for the faction specified
      *
      * @param uint32 factionId
@@ -3403,6 +3440,7 @@ namespace LuaPlayer
         { "GetComboTarget", &LuaPlayer::GetComboTarget },
         { "GetGuildName", &LuaPlayer::GetGuildName },
         { "GetFreeTalentPoints", &LuaPlayer::GetFreeTalentPoints },
+        { "GetExtraTalentPoints", &LuaPlayer::GetExtraTalentPoints },
         { "GetSpellCooldownDelay", &LuaPlayer::GetSpellCooldownDelay },
         { "GetGuildRank", &LuaPlayer::GetGuildRank },
         { "GetDifficulty", &LuaPlayer::GetDifficulty },
@@ -3454,6 +3492,7 @@ namespace LuaPlayer
         { "SetQuestStatus", &LuaPlayer::SetQuestStatus },
         { "SetReputation", &LuaPlayer::SetReputation },
         { "SetFreeTalentPoints", &LuaPlayer::SetFreeTalentPoints },
+        { "SetExtraTalentPoints", &LuaPlayer::SetExtraTalentPoints },
         { "SetGuildRank", &LuaPlayer::SetGuildRank },
         { "SetSkill", &LuaPlayer::SetSkill },
         { "SetFactionForRace", &LuaPlayer::SetFactionForRace },
@@ -3523,6 +3562,7 @@ namespace LuaPlayer
         { "SendPacket", &LuaPlayer::SendPacket },
         { "SendAddonMessage", &LuaPlayer::SendAddonMessage },
         { "ModifyMoney", &LuaPlayer::ModifyMoney },
+        { "ModifyExtraTalentPoints", &LuaPlayer::ModifyExtraTalentPoints },
         { "LearnSpell", &LuaPlayer::LearnSpell },
         { "LearnTalent", &LuaPlayer::LearnTalent },
         { "RemoveItem", &LuaPlayer::RemoveItem },
