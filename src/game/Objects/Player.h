@@ -1396,6 +1396,7 @@ class Player final: public Unit
         mutable uint32 m_resetTalentsMultiplier;
         time_t m_resetTalentsTime;
         uint32 m_usedTalentCount;
+        uint32 m_extraTalentPoints; // Extra talent points from items, achievements, etc.
 
         void UpdateFreeTalentPoints(bool resetIfNeed = true);
 
@@ -1406,6 +1407,9 @@ class Player final: public Unit
 		uint32 GetResetTalentsCost() const;
         uint32 GetFreeTalentPoints() const { return GetUInt32Value(PLAYER_CHARACTER_POINTS1); }
         void SetFreeTalentPoints(uint32 points) { SetUInt32Value(PLAYER_CHARACTER_POINTS1, points); }
+        uint32 GetExtraTalentPoints() const { return m_extraTalentPoints; }
+        void SetExtraTalentPoints(uint32 points) { m_extraTalentPoints = points; }
+        void ModifyExtraTalentPoints(int32 points) { m_extraTalentPoints = int32(m_extraTalentPoints) + points < 0 ? 0 : m_extraTalentPoints + points; }
         bool ResetTalents(bool noCost = false);
         void InitTalentForLevel();
         bool LearnTalent(uint32 talentId, uint32 talentRank);

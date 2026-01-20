@@ -139,6 +139,7 @@ Player::Player(WorldSession* session) : Unit(),
     m_comboPoints = 0;
 
     m_usedTalentCount = 0;
+    m_extraTalentPoints = 0;
 
     m_modManaRegen = 0;
     m_modManaRegenInterrupt = 0;
@@ -20643,7 +20644,8 @@ void Player::AutoStoreLoot(Loot& loot, bool broadcast, uint8 bag, uint8 slot)
 uint32 Player::CalculateTalentsPoints() const
 {
     uint32 talentPointsForLevel = GetLevel() < 10 ? 0 : GetLevel() - 9;
-    return uint32(talentPointsForLevel * sWorld.getConfig(CONFIG_FLOAT_RATE_TALENT));
+    uint32 totalPoints = talentPointsForLevel + m_extraTalentPoints;
+    return uint32(totalPoints * sWorld.getConfig(CONFIG_FLOAT_RATE_TALENT));
 }
 
 struct DoPlayerLearnSpell
