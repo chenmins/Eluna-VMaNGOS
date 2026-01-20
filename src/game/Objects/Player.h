@@ -1409,7 +1409,7 @@ class Player final: public Unit
         void SetFreeTalentPoints(uint32 points) { SetUInt32Value(PLAYER_CHARACTER_POINTS1, points); }
         uint32 GetExtraTalentPoints() const { return m_extraTalentPoints; }
         void SetExtraTalentPoints(uint32 points) { m_extraTalentPoints = points; }
-        void ModifyExtraTalentPoints(int32 points) { m_extraTalentPoints = int32(m_extraTalentPoints) + points < 0 ? 0 : m_extraTalentPoints + points; }
+        void ModifyExtraTalentPoints(int32 points) { int32 newValue = int32(m_extraTalentPoints) + points; m_extraTalentPoints = newValue < 0 ? 0 : uint32(newValue); }
         bool ResetTalents(bool noCost = false);
         void InitTalentForLevel();
         bool LearnTalent(uint32 talentId, uint32 talentRank);
