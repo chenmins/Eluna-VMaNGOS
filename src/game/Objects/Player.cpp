@@ -20644,6 +20644,8 @@ void Player::AutoStoreLoot(Loot& loot, bool broadcast, uint8 bag, uint8 slot)
 uint32 Player::CalculateTalentsPoints() const
 {
     uint32 talentPointsForLevel = GetLevel() < 10 ? 0 : GetLevel() - 9;
+    // Note: Theoretical overflow could occur if both values are extremely large (near UINT32_MAX),
+    // but this is practically impossible in normal gameplay (max level is 60, max extra points would be reasonable)
     uint32 totalPoints = talentPointsForLevel + m_extraTalentPoints;
     return uint32(totalPoints * sWorld.getConfig(CONFIG_FLOAT_RATE_TALENT));
 }

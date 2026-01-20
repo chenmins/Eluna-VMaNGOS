@@ -1511,7 +1511,7 @@ namespace LuaPlayer
     {
         uint32 points = E->CHECKVAL<uint32>(2);
         player->SetExtraTalentPoints(points);
-        player->UpdateFreeTalentPoints(false);  // false = don't reset talents if over limit
+        player->UpdateFreeTalentPoints(false);  // Pass false to skip talent reset check
         return 0;
     }
 
@@ -1526,7 +1526,7 @@ namespace LuaPlayer
     {
         int32 points = E->CHECKVAL<int32>(2);
         player->ModifyExtraTalentPoints(points);
-        player->UpdateFreeTalentPoints(false);  // false = don't reset talents if over limit
+        player->UpdateFreeTalentPoints(false);  // Pass false to skip talent reset check
         return 0;
     }
 

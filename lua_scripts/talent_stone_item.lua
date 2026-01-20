@@ -28,7 +28,8 @@ local function OnUseTalentStone(event, player, item, target)
     if CONSUME_ITEM then
         local removed = player:RemoveItem(item, 1)
         if not removed then
-            player:SendBroadcastMessage("Failed to consume item / 物品消耗失败")
+            player:SendBroadcastMessage("Unable to remove Talent Stone from inventory")
+            player:SendBroadcastMessage("无法从背包中移除天赋石")
             return false
         end
     end
