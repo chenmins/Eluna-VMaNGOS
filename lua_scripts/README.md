@@ -5,6 +5,32 @@
 ### Overview
 This feature allows server administrators to create custom items that grant additional talent points to players. The system is implemented using Eluna scripting and provides flexible control over talent point distribution.
 
+### Installation
+
+1. **Apply C++ changes**: The core changes have been made to:
+   - `src/game/Objects/Player.h` - Added extra talent points storage
+   - `src/game/Objects/Player.cpp` - Modified talent calculation
+   - `src/modules/Eluna/methods/VMangos/PlayerMethods.h` - Added Eluna API
+
+2. **Compile the server**: Build your VMangos server as usual with CMake.
+
+3. **Deploy Lua scripts**: 
+   - Copy the `lua_scripts` folder to your server's root directory
+   - Edit `mangosd.conf` and set: `Eluna.ScriptPath = "lua_scripts"`
+
+4. **Create items**: 
+   - Execute `lua_scripts/talent_stone_items.sql` in your world database
+   - This creates sample talent stone items with IDs 12345-12348
+
+5. **Configure scripts**:
+   - Edit `lua_scripts/talent_stone_item.lua` 
+   - Set `ITEM_ENTRY_ID` to your desired item ID
+   - Adjust `TALENT_POINTS_PER_USE` as needed
+
+6. **Restart server**: Launch your server and test!
+
+For detailed testing instructions, see `lua_scripts/TESTING.md`.
+
 ### How It Works
 1. **Extra Talent Points Storage**: Each player has an `m_extraTalentPoints` field that stores bonus talent points from items, achievements, or other sources.
 2. **Talent Calculation**: The `CalculateTalentsPoints()` function now includes extra talent points in the total calculation.
@@ -86,6 +112,32 @@ player:ModifyExtraTalentPoints(-3)  -- Remove 3 points
 
 ### 概述
 此功能允许服务器管理员创建可以为玩家授予额外天赋点的自定义物品。该系统使用 Eluna 脚本实现，提供了灵活的天赋点分配控制。
+
+### 安装步骤
+
+1. **应用 C++ 更改**：核心更改已应用于：
+   - `src/game/Objects/Player.h` - 添加了额外天赋点存储
+   - `src/game/Objects/Player.cpp` - 修改了天赋计算
+   - `src/modules/Eluna/methods/VMangos/PlayerMethods.h` - 添加了 Eluna API
+
+2. **编译服务器**：使用 CMake 照常构建您的 VMangos 服务器。
+
+3. **部署 Lua 脚本**：
+   - 将 `lua_scripts` 文件夹复制到服务器根目录
+   - 编辑 `mangosd.conf` 并设置：`Eluna.ScriptPath = "lua_scripts"`
+
+4. **创建物品**：
+   - 在世界数据库中执行 `lua_scripts/talent_stone_items.sql`
+   - 这将创建 ID 为 12345-12348 的示例天赋石物品
+
+5. **配置脚本**：
+   - 编辑 `lua_scripts/talent_stone_item.lua`
+   - 将 `ITEM_ENTRY_ID` 设置为您想要的物品 ID
+   - 根据需要调整 `TALENT_POINTS_PER_USE`
+
+6. **重启服务器**：启动服务器并测试！
+
+详细的测试说明请参阅 `lua_scripts/TESTING.md`。
 
 ### 工作原理
 1. **额外天赋点存储**：每个玩家都有一个 `m_extraTalentPoints` 字段，用于存储来自物品、成就或其他来源的额外天赋点。
