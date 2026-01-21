@@ -139,6 +139,7 @@ Player::Player(WorldSession* session) : Unit(),
     m_comboPoints = 0;
 
     m_usedTalentCount = 0;
+    m_extraTalentPoints = 0;
 
     m_modManaRegen = 0;
     m_modManaRegenInterrupt = 0;
@@ -15303,6 +15304,14 @@ bool Player::LoadFromDB(ObjectGuid guid, SqlQueryHolder* holder)
     if ((extraflags & PLAYER_EXTRA_CITY_PROTECTOR) && sWorld.getConfig(CONFIG_BOOL_ENABLE_CITY_PROTECTOR))
         SetCityTitle();
 
+    // Load extra talent points
+    std::unique_ptr<QueryResult> extraTalentResult = CharacterDatabase.PQuery("SELECT extra_points FROM character_extra_talent_points WHERE guid = %u", GetGUIDLow());
+    if (extraTalentResult)
+    {
+        Field* extraFields = extraTalentResult->Fetch();
+        m_extraTalentPoints = extraFields[0].GetUInt32();
+    }
+
     sBattleGroundMgr.PlayerLoggedIn(this); // Add to BG queue if needed
     CreatePacketBroadcaster();
 
@@ -16675,6 +16684,12 @@ void Player::SaveToDB(bool online, bool force)
     _SaveSkills();
     m_reputationMgr.SaveToDB();
     m_honorMgr.Save();
+
+    // Save extra talent points
+    CharacterDatabase.PExecute("UPDATE characters SET extra_flags = %u WHERE guid = %u", m_ExtraFlags, GetGUIDLow());
+    CharacterDatabase.PExecute("DELETE FROM character_extra_talent_points WHERE guid = %u", GetGUIDLow());
+    if (m_extraTalentPoints > 0)
+        CharacterDatabase.PExecute("INSERT INTO character_extra_talent_points (guid, extra_points) VALUES (%u, %u)", GetGUIDLow(), m_extraTalentPoints);
 
     // Systeme de phasing
     sObjectMgr.SetPlayerWorldMask(GetGUIDLow(), GetWorldMask());
@@ -20643,7 +20658,16 @@ void Player::AutoStoreLoot(Loot& loot, bool broadcast, uint8 bag, uint8 slot)
 uint32 Player::CalculateTalentsPoints() const
 {
     uint32 talentPointsForLevel = GetLevel() < 10 ? 0 : GetLevel() - 9;
-    return uint32(talentPointsForLevel * sWorld.getConfig(CONFIG_FLOAT_RATE_TALENT));
+    // Note: Theoretical overflow could occur if both values are extremely large (near UINT32_MAX),
+    // but this is practically impossible in normal gameplay (max level is 60, max extra points would be reasonable)
+    uint32 totalPoints = talentPointsForLevel + m_extraTalentPoints;
+    return uint32(totalPoints * sWorld.getConfig(CONFIG_FLOAT_RATE_TALENT));
+}
+
+void Player::ModifyExtraTalentPoints(int32 points)
+{
+    int32 newValue = int32(m_extraTalentPoints) + points;
+    m_extraTalentPoints = newValue < 0 ? 0 : uint32(newValue);
 }
 
 struct DoPlayerLearnSpell
