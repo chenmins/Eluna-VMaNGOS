@@ -15304,6 +15304,14 @@ bool Player::LoadFromDB(ObjectGuid guid, SqlQueryHolder* holder)
     if ((extraflags & PLAYER_EXTRA_CITY_PROTECTOR) && sWorld.getConfig(CONFIG_BOOL_ENABLE_CITY_PROTECTOR))
         SetCityTitle();
 
+    // Load extra talent points
+    std::unique_ptr<QueryResult> extraTalentResult = CharacterDatabase.PQuery("SELECT extra_points FROM character_extra_talent_points WHERE guid = %u", GetGUIDLow());
+    if (extraTalentResult)
+    {
+        Field* extraFields = extraTalentResult->Fetch();
+        m_extraTalentPoints = extraFields[0].GetUInt32();
+    }
+
     sBattleGroundMgr.PlayerLoggedIn(this); // Add to BG queue if needed
     CreatePacketBroadcaster();
 
@@ -16676,6 +16684,12 @@ void Player::SaveToDB(bool online, bool force)
     _SaveSkills();
     m_reputationMgr.SaveToDB();
     m_honorMgr.Save();
+
+    // Save extra talent points
+    CharacterDatabase.PExecute("UPDATE characters SET extra_flags = %u WHERE guid = %u", m_ExtraFlags, GetGUIDLow());
+    CharacterDatabase.PExecute("DELETE FROM character_extra_talent_points WHERE guid = %u", GetGUIDLow());
+    if (m_extraTalentPoints > 0)
+        CharacterDatabase.PExecute("INSERT INTO character_extra_talent_points (guid, extra_points) VALUES (%u, %u)", GetGUIDLow(), m_extraTalentPoints);
 
     // Systeme de phasing
     sObjectMgr.SetPlayerWorldMask(GetGUIDLow(), GetWorldMask());

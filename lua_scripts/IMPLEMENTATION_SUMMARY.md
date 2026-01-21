@@ -210,10 +210,11 @@ Comprehensive testing guide with:
 # Check your talent window
 # (Press 'N' key)
 
-# For GMs: Use NPC gossip or items to manage talent points
-# VMangos does not support custom .command through Eluna
-# GM使用：使用NPC对话或物品来管理天赋点
-# VMangos不支持通过Eluna自定义.command命令
+# GM Commands
+.talentpoints get      # Check current extra points
+.talentpoints add 10   # Add 10 extra points
+.talentpoints remove 5 # Remove 5 extra points
+.talentpoints set 20   # Set to exactly 20 points
 ```
 
 ### Lua Scripting Examples / Lua 脚本示例
@@ -254,8 +255,11 @@ RegisterPlayerEvent(13, OnLevelUp)
 3. When extra points change, `UpdateFreeTalentPoints()` is called to update the UI
    当额外点数改变时，调用 `UpdateFreeTalentPoints()` 更新界面
 
-4. The value is stored in memory only (not persisted to database by default)
-   该值仅存储在内存中（默认不持久化到数据库）
+4. Extra talent points are persisted to the `character_extra_talent_points` database table
+   额外天赋点持久化到 `character_extra_talent_points` 数据库表
+
+5. Points are loaded on character login and saved on logout/save
+   角色登录时加载点数，登出/保存时存储点数
 
 ### Performance / 性能
 
@@ -265,26 +269,24 @@ RegisterPlayerEvent(13, OnLevelUp)
 - **Calculation**: O(1) - simple addition
   计算: O(1) - 简单加法
   
-- **Database**: No queries during gameplay
-  数据库: 游戏过程中无查询
+- **Database**: One query on login, one on save
+  数据库: 登录时一次查询，保存时一次查询
 
-### Persistence Note / 持久化说明
+### Database Persistence / 数据库持久化
 
-⚠️ **Important**: Extra talent points are NOT saved to the database by default. They reset on server restart.
+Extra talent points are now persisted to the database:
+额外天赋点现在持久化到数据库：
 
-重要: 额外天赋点默认不保存到数据库。服务器重启时会重置。
-
-To add persistence, you would need to:
-要添加持久化，您需要：
-
-1. Add a column to the characters table
-   向角色表添加一列
-   
-2. Modify `Player::SaveToDB()` to save the value
-   修改 `Player::SaveToDB()` 保存值
-   
-3. Modify `Player::LoadFromDB()` to load the value
-   修改 `Player::LoadFromDB()` 加载值
+- Stored in separate table `character_extra_talent_points`
+  存储在单独的表 `character_extra_talent_points` 中
+- Table created with `character_extra_talent_points.sql`
+  使用 `character_extra_talent_points.sql` 创建表
+- Saved on character logout/save in `Player::SaveToDB()`
+  在角色登出/保存时存储，在 `Player::SaveToDB()` 中
+- Loaded on character login in `Player::LoadFromDB()`
+  在角色登录时加载，在 `Player::LoadFromDB()` 中
+- **Survives server restarts** - points are preserved!
+  **服务器重启后保留** - 点数被保存！
 
 ---
 

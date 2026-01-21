@@ -32,7 +32,11 @@ VALUES (12345, 0, 8, 'Talent Stone', 6418, 4, 0, 10000, 2500, 0, -1, -1, 1, 1, 2
    ```
    Eluna.ScriptPath = "lua_scripts"
    ```
-3. Restart your server / 重启服务器
+3. **Create the database table for persistence** / 创建持久化数据库表
+   ```bash
+   mysql -u root -p characters < lua_scripts/character_extra_talent_points.sql
+   ```
+4. Restart your server / 重启服务器
 
 将 lua_scripts 文件夹复制到服务器根目录
 编辑 `mangosd.conf` 并设置 Eluna 脚本路径
@@ -86,34 +90,26 @@ local ITEM_ENTRY_ID = 12345  -- Your item ID / 您的物品 ID
 - Each use should display the cumulative total
   每次使用都应该显示累计总数
 
-### Test 3: NPC Gossip Management / NPC 对话管理
-
-**Note**: VMangos does not support custom `.command` style commands through Eluna. Use NPC gossip instead.
-**注意**：VMangos 不支持通过 Eluna 实现自定义 `.command` 风格的命令。请改用 NPC 对话。
+### Test 3: GM Commands / GM 命令
 
 **Steps / 步骤:**
 
-1. Create a talent manager NPC using the SQL:
-   使用 SQL 创建天赋管理 NPC：
-   ```sql
-   INSERT INTO creature_template (entry, name, subname, minlevel, maxlevel, faction, npcflag)
-   VALUES (90000, 'Talent Manager', 'Extra Talent Points', 60, 60, 35, 1);
-   ```
+Test the talent point commands:
+测试天赋点命令：
 
-2. Spawn the NPC in game / 在游戏中生成 NPC
-3. Uncomment the gossip registration lines in talent_system_examples.lua
-   在 talent_system_examples.lua 中取消注释对话注册行
-4. Reload Eluna scripts / 重新加载 Eluna 脚本
-5. Talk to the NPC and use the gossip menu
-   与 NPC 对话并使用对话菜单
+```
+.talentpoints get          # Check current extra points / 检查当前额外点数
+.talentpoints add 5        # Add 5 points / 添加 5 点
+.talentpoints get          # Verify addition / 验证添加
+.talentpoints remove 2     # Remove 2 points / 移除 2 点
+.talentpoints set 10       # Set to exactly 10 / 设置为正好 10
+```
 
 **Expected Result / 预期结果:**
-- NPC should show gossip menu with talent point options
-  NPC 应该显示带有天赋点选项的对话菜单
-- Selecting options should add/remove talent points
-  选择选项应该添加/移除天赋点
-- Messages should confirm the changes
-  消息应该确认更改
+- Commands should work correctly and display appropriate messages
+  命令应该正常工作并显示适当的消息
+- Talent window should reflect changes after each command
+  每次命令后天赋窗口应该反映变化
 
 ### Test 4: Level Up Integration / 升级集成
 
@@ -163,19 +159,30 @@ local ITEM_ENTRY_ID = 12345  -- Your item ID / 您的物品 ID
 
 ### Test 7: Server Restart Persistence / 服务器重启持久化
 
-**Note / 注意:**
-The current implementation does NOT persist extra talent points across server restarts. This is intentional to keep the implementation minimal.
-当前实现不会在服务器重启后保留额外天赋点。这是有意为之，以保持实现最小化。
+**Important**: This test requires the database table to be created first!
+**重要**：此测试需要先创建数据库表！
 
-If you need persistence, you would need to:
-如果需要持久化，您需要：
+**Steps / 步骤:**
 
-1. Add a database field to store extra talent points
-   添加数据库字段来存储额外天赋点
-2. Save the value in `Player::SaveToDB()`
-   在 `Player::SaveToDB()` 中保存值
-3. Load the value in `Player::LoadFromDB()`
-   在 `Player::LoadFromDB()` 中加载值
+1. Ensure `character_extra_talent_points` table exists in characters database
+   确保 characters 数据库中存在 `character_extra_talent_points` 表
+2. Add extra talent points using `.talentpoints add 10`
+   使用 `.talentpoints add 10` 添加额外天赋点
+3. Check current points: `.talentpoints get`
+   检查当前点数：`.talentpoints get`
+4. Logout character / 登出角色
+5. Restart the server / 重启服务器
+6. Login with the same character / 使用同一角色登录
+7. Check points again: `.talentpoints get`
+   再次检查点数：`.talentpoints get`
+
+**Expected Result / 预期结果:**
+- Extra talent points should be preserved after server restart
+  额外天赋点应该在服务器重启后保留
+- Points shown should match the value before restart
+  显示的点数应该与重启前的值匹配
+- Talent window should show the correct total
+  天赋窗口应该显示正确的总数
 
 ## Troubleshooting / 故障排除
 
