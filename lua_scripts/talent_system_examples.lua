@@ -96,72 +96,88 @@ end
 RegisterPlayerEvent(6, OnQuestComplete)
 
 -- ==============================================================================
--- Example 3: GM Command for Talent Points / GM 命令授予天赋点
+-- Example 3: GM NPC for Managing Talent Points / GM NPC 管理天赋点
 -- ==============================================================================
 
-local function HandleTalentPointCommand(event, player, command)
-    -- Command format: .talentpoints <add|remove|set|get> [amount]
-    -- 命令格式：.talentpoints <add|remove|set|get> [数量]
+--[[
+    NOTE: Custom `.command` style GM commands do NOT work in VMangos through Eluna.
+    VMangos does not integrate Eluna's command system like TrinityCore does.
     
-    local parts = {}
-    for word in command:gmatch("%S+") do
-        table.insert(parts, word)
-    end
+    注意：在 VMangos 中，通过 Eluna 无法实现自定义的 `.command` 风格 GM 命令。
+    VMangos 不像 TrinityCore 那样集成 Eluna 的命令系统。
     
-    if parts[1] ~= "talentpoints" then
-        return true  -- Not our command, pass to next handler
-    end
+    Instead, use one of these alternatives:
+    建议使用以下替代方案：
     
-    local action = parts[2]
-    local amount = tonumber(parts[3]) or 0
+    1. Items - Use talent stone items (see talent_stone_item.lua)
+       物品 - 使用天赋石物品（见 talent_stone_item.lua）
     
-    if action == "get" then
-        local current = player:GetExtraTalentPoints()
-        player:SendBroadcastMessage(string.format(
-            "Extra talent points: %d", current
-        ))
-        player:SendBroadcastMessage(string.format(
-            "额外天赋点：%d", current
-        ))
-        
-    elseif action == "add" and amount > 0 then
-        player:ModifyExtraTalentPoints(amount)
-        player:SendBroadcastMessage(string.format(
-            "Added %d talent point(s)", amount
-        ))
-        player:SendBroadcastMessage(string.format(
-            "添加了 %d 个天赋点", amount
-        ))
-        
-    elseif action == "remove" and amount > 0 then
-        player:ModifyExtraTalentPoints(-amount)
-        player:SendBroadcastMessage(string.format(
-            "Removed %d talent point(s)", amount
-        ))
-        player:SendBroadcastMessage(string.format(
-            "移除了 %d 个天赋点", amount
-        ))
-        
-    elseif action == "set" and amount >= 0 then
-        player:SetExtraTalentPoints(amount)
-        player:SendBroadcastMessage(string.format(
-            "Set extra talent points to %d", amount
-        ))
-        player:SendBroadcastMessage(string.format(
-            "设置额外天赋点为 %d", amount
-        ))
-        
-    else
-        player:SendBroadcastMessage("Usage: .talentpoints <add|remove|set|get> [amount]")
-        player:SendBroadcastMessage("用法：.talentpoints <add|remove|set|get> [数量]")
-    end
+    2. NPC Gossip - Create an NPC that GMs can use to manage talent points
+       NPC 对话 - 创建一个 NPC，GM 可以用它来管理天赋点
     
-    return false  -- Command handled, don't pass to next handler
+    3. C++ Commands - Add a native C++ command to the server (requires server modification)
+       C++ 命令 - 向服务器添加原生 C++ 命令（需要修改服务器）
+    
+    Below is an example using NPC Gossip:
+    下面是使用 NPC 对话的示例：
+]]
+
+local TALENT_MANAGER_NPC = 90000  -- Replace with your NPC entry ID / 替换为您的 NPC ID
+
+local function TalentManagerGossipHello(event, player, creature)
+    player:GossipClearMenu()
+    player:GossipMenuAddItem(0, "Check Extra Talent Points / 查看额外天赋点", 0, 1)
+    player:GossipMenuAddItem(0, "Add 1 Talent Point / 添加 1 个天赋点", 0, 2)
+    player:GossipMenuAddItem(0, "Add 5 Talent Points / 添加 5 个天赋点", 0, 3)
+    player:GossipMenuAddItem(0, "Add 10 Talent Points / 添加 10 个天赋点", 0, 4)
+    player:GossipMenuAddItem(0, "Remove 1 Talent Point / 移除 1 个天赋点", 0, 5)
+    player:GossipMenuAddItem(0, "Remove All Extra Points / 移除所有额外点数", 0, 6)
+    player:GossipSendMenu(1, creature)
 end
 
--- Register command event (event 42 = PLAYER_EVENT_ON_COMMAND)
--- 注册命令事件
-RegisterPlayerEvent(42, HandleTalentPointCommand)
+local function TalentManagerGossipSelect(event, player, creature, sender, action)
+    if action == 1 then
+        -- Check points / 查看点数
+        local current = player:GetExtraTalentPoints()
+        player:SendBroadcastMessage(string.format("Extra Talent Points: %d / 额外天赋点：%d", current, current))
+        player:GossipComplete()
+        
+    elseif action == 2 then
+        -- Add 1 / 添加 1
+        player:ModifyExtraTalentPoints(1)
+        player:SendBroadcastMessage("Added 1 talent point / 添加了 1 个天赋点")
+        player:GossipComplete()
+        
+    elseif action == 3 then
+        -- Add 5 / 添加 5
+        player:ModifyExtraTalentPoints(5)
+        player:SendBroadcastMessage("Added 5 talent points / 添加了 5 个天赋点")
+        player:GossipComplete()
+        
+    elseif action == 4 then
+        -- Add 10 / 添加 10
+        player:ModifyExtraTalentPoints(10)
+        player:SendBroadcastMessage("Added 10 talent points / 添加了 10 个天赋点")
+        player:GossipComplete()
+        
+    elseif action == 5 then
+        -- Remove 1 / 移除 1
+        player:ModifyExtraTalentPoints(-1)
+        player:SendBroadcastMessage("Removed 1 talent point / 移除了 1 个天赋点")
+        player:GossipComplete()
+        
+    elseif action == 6 then
+        -- Remove all / 移除所有
+        player:SetExtraTalentPoints(0)
+        player:SendBroadcastMessage("Removed all extra talent points / 移除了所有额外天赋点")
+        player:GossipComplete()
+    end
+end
+
+-- Register NPC gossip events (only uncomment if you create the NPC)
+-- 注册 NPC 对话事件（仅在创建 NPC 后取消注释）
+-- RegisterCreatureGossipEvent(TALENT_MANAGER_NPC, 1, TalentManagerGossipHello)
+-- RegisterCreatureGossipEvent(TALENT_MANAGER_NPC, 2, TalentManagerGossipSelect)
 
 -- ==============================================================================
 -- Example 4: Level-based Bonus Talent Points / 基于等级的额外天赋点

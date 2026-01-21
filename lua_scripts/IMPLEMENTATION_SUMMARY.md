@@ -210,11 +210,10 @@ Comprehensive testing guide with:
 # Check your talent window
 # (Press 'N' key)
 
-# GM Commands
-.talentpoints get      # Check current extra points
-.talentpoints add 10   # Add 10 extra points
-.talentpoints remove 5 # Remove 5 extra points
-.talentpoints set 20   # Set to exactly 20 points
+# For GMs: Use NPC gossip or items to manage talent points
+# VMangos does not support custom .command through Eluna
+# GM使用：使用NPC对话或物品来管理天赋点
+# VMangos不支持通过Eluna自定义.command命令
 ```
 
 ### Lua Scripting Examples / Lua 脚本示例

@@ -66,10 +66,12 @@ RegisterItemEvent(ITEM_ENTRY_ID, 2, OnUseTalentStone)
 
 #### Advanced Usage
 You can also grant talent points through other means:
-- Achievement rewards
+- Achievement rewards (example provided for compatible versions)
 - Quest rewards
-- GM commands
+- NPC Gossip (for GMs to manage points)
 - Special events
+
+**Note**: Custom `.` style GM commands do NOT work in VMangos through Eluna. Use NPC gossip or items instead.
 
 Example for quest reward:
 ```lua
@@ -81,6 +83,27 @@ local function OnQuestComplete(event, player, quest)
 end
 
 RegisterPlayerEvent(6, OnQuestComplete)  -- 6 = PLAYER_EVENT_ON_QUEST_COMPLETE
+```
+
+Example for NPC Gossip (for GMs):
+```lua
+local TALENT_NPC = 90000  -- Your NPC ID
+
+local function OnGossipHello(event, player, creature)
+    player:GossipMenuAddItem(0, "Add 5 Talent Points", 0, 1)
+    player:GossipSendMenu(1, creature)
+end
+
+local function OnGossipSelect(event, player, creature, sender, action)
+    if action == 1 then
+        player:ModifyExtraTalentPoints(5)
+        player:SendBroadcastMessage("Added 5 talent points!")
+        player:GossipComplete()
+    end
+end
+
+RegisterCreatureGossipEvent(TALENT_NPC, 1, OnGossipHello)
+RegisterCreatureGossipEvent(TALENT_NPC, 2, OnGossipSelect)
 ```
 
 ### API Reference

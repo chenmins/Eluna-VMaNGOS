@@ -86,26 +86,34 @@ local ITEM_ENTRY_ID = 12345  -- Your item ID / 您的物品 ID
 - Each use should display the cumulative total
   每次使用都应该显示累计总数
 
-### Test 3: GM Commands / GM 命令
+### Test 3: NPC Gossip Management / NPC 对话管理
+
+**Note**: VMangos does not support custom `.command` style commands through Eluna. Use NPC gossip instead.
+**注意**：VMangos 不支持通过 Eluna 实现自定义 `.command` 风格的命令。请改用 NPC 对话。
 
 **Steps / 步骤:**
 
-Test the talent point commands:
-测试天赋点命令：
+1. Create a talent manager NPC using the SQL:
+   使用 SQL 创建天赋管理 NPC：
+   ```sql
+   INSERT INTO creature_template (entry, name, subname, minlevel, maxlevel, faction, npcflag)
+   VALUES (90000, 'Talent Manager', 'Extra Talent Points', 60, 60, 35, 1);
+   ```
 
-```
-.talentpoints get          # Check current extra points / 检查当前额外点数
-.talentpoints add 5        # Add 5 points / 添加 5 点
-.talentpoints get          # Verify addition / 验证添加
-.talentpoints remove 2     # Remove 2 points / 移除 2 点
-.talentpoints set 10       # Set to exactly 10 / 设置为正好 10
-```
+2. Spawn the NPC in game / 在游戏中生成 NPC
+3. Uncomment the gossip registration lines in talent_system_examples.lua
+   在 talent_system_examples.lua 中取消注释对话注册行
+4. Reload Eluna scripts / 重新加载 Eluna 脚本
+5. Talk to the NPC and use the gossip menu
+   与 NPC 对话并使用对话菜单
 
 **Expected Result / 预期结果:**
-- Commands should work correctly and display appropriate messages
-  命令应该正常工作并显示适当的消息
-- Talent window should reflect changes after each command
-  每次命令后天赋窗口应该反映变化
+- NPC should show gossip menu with talent point options
+  NPC 应该显示带有天赋点选项的对话菜单
+- Selecting options should add/remove talent points
+  选择选项应该添加/移除天赋点
+- Messages should confirm the changes
+  消息应该确认更改
 
 ### Test 4: Level Up Integration / 升级集成
 
