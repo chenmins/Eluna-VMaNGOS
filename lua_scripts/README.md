@@ -18,11 +18,18 @@ This feature allows server administrators to create custom items that grant addi
    - Copy the `lua_scripts` folder to your server's root directory
    - Edit `mangosd.conf` and set: `Eluna.ScriptPath = "lua_scripts"`
 
-4. **Create items**: 
+4. **Create database table for persistence**:
+   - Execute `lua_scripts/character_extra_talent_points.sql` in your **characters** database
+   - This table stores extra talent points so they persist across server restarts
+   ```bash
+   mysql -u root -p characters < lua_scripts/character_extra_talent_points.sql
+   ```
+
+5. **Create items**: 
    - Execute `lua_scripts/talent_stone_items.sql` in your world database
    - This creates sample talent stone items with IDs 12345-12348
 
-5. **Configure scripts**:
+6. **Configure scripts**:
    - Edit `lua_scripts/talent_stone_item.lua` 
    - Set `ITEM_ENTRY_ID` to your desired item ID
    - Adjust `TALENT_POINTS_PER_USE` as needed
@@ -34,7 +41,8 @@ For detailed testing instructions, see `lua_scripts/TESTING.md`.
 ### How It Works
 1. **Extra Talent Points Storage**: Each player has an `m_extraTalentPoints` field that stores bonus talent points from items, achievements, or other sources.
 2. **Talent Calculation**: The `CalculateTalentsPoints()` function now includes extra talent points in the total calculation.
-3. **Eluna API**: Three new methods are available:
+3. **Persistence**: Extra talent points are saved to the `character_extra_talent_points` table in the characters database.
+4. **Eluna API**: Three new methods are available:
    - `GetExtraTalentPoints()`: Returns the current extra talent points
    - `SetExtraTalentPoints(points)`: Sets the extra talent points to a specific value
    - `ModifyExtraTalentPoints(points)`: Adds or removes extra talent points (positive to add, negative to remove)
