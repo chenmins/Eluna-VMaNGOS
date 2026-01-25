@@ -428,6 +428,24 @@ void Eluna::OnLogout(Player* pPlayer)
     CallAllFunctions(binding, key);
 }
 
+
+// 增益事件
+void Eluna::OnBoost(Player* pPlayer)
+{
+    START_HOOK(PLAYER_EVENT_ON_BOOST);
+    HookPush(pPlayer);
+    CallAllFunctions(binding, key);
+}
+
+// 瞬飞事件
+bool Eluna::OnFight(Player* pPlayer)
+{
+    START_HOOK_WITH_RETVAL(PLAYER_EVENT_ON_FIGHT, true);
+    HookPush(pPlayer);
+    return CallAllFunctionsBool(binding, key, true);
+}
+
+
 void Eluna::OnCreate(Player* pPlayer)
 {
     START_HOOK(PLAYER_EVENT_ON_CHARACTER_CREATE);
@@ -677,3 +695,5 @@ bool Eluna::OnChat(Player* pPlayer, uint32 type, uint32 lang, std::string& msg, 
     CleanUpStack(5);
     return result;
 }
+
+

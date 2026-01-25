@@ -3104,6 +3104,11 @@ DynamicRespawn.PlayersMaxLevelDiff      = 0
 #        Default:     3 - (Administrator)
 #                     4 - (Console)
 #
+#    Eluna.PlayerBoostInterval
+#        Interval in milliseconds between periodic player boost callbacks while online.
+#        Set to 0 to disable the boost event.
+#        Default: 15000
+#
 ###################################################################################################################
 Eluna.Enabled    = 1
 Eluna.TraceBack  = false
@@ -3116,6 +3121,8 @@ Eluna.ScriptPath = "./lua_scripts"
 Eluna.RequirePaths = ""
 Eluna.RequireCPaths = ""
 Eluna.ReloadSecurityLevel = 3
+Eluna.PlayerBoostInterval = 15000
+
 
 ###################################################################################################################
 #    AOE LOOT SETTINGS

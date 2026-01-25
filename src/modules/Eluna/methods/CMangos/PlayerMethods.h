@@ -1987,7 +1987,7 @@ namespace LuaPlayer
     int SetFFA(Eluna* E, Player* player)
     {
         bool apply = E->CHECKVAL<bool>(2, true);
-        player->SetPvPFreeForAll(apply);
+        player->SetFFAPvP(apply);
         return 0;
     }
 
@@ -4047,6 +4047,7 @@ namespace LuaPlayer
         { "SendMovieStart", METHOD_REG_NONE },
 #endif
         { "RunCommand", &LuaPlayer::RunCommand },
+        { "SetFFA", &LuaPlayer::SetFFA },
 
         // Not implemented methods
         { "GetChampioningFaction", METHOD_REG_NONE }, // ACore & TC only
@@ -4058,7 +4059,6 @@ namespace LuaPlayer
         { "SetRankPoints", METHOD_REG_NONE }, // classic only
         { "SetHonorLastWeekStandingPos", METHOD_REG_NONE }, // classic only
         { "SetMovement", METHOD_REG_NONE }, // not implemented
-        { "SetFFA", METHOD_REG_NONE }, // not implemented
         { "IsImmuneToEnvironmentalDamage", METHOD_REG_NONE }, // not implemented
         { "InRandomLfgDungeon", METHOD_REG_NONE }, // not implemented
         { "HasPendingBind", METHOD_REG_NONE }, //not implmented

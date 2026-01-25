@@ -1615,7 +1615,8 @@ namespace LuaUnit
     {
         bool apply = E->CHECKVAL<bool>(2, true);
 
-        unit->SetPvPFreeForAll(apply);
+        if (Player* player = unit->ToPlayer())
+            player->SetFFAPvP(apply);
         return 0;
     }
 
