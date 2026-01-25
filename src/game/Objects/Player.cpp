@@ -38,6 +38,10 @@
 #include "GossipDef.h"
 #include "UpdateData.h"
 #include "Channel.h"
+#include "Config/Config.h"
+#ifdef ENABLE_ELUNA
+#include "LuaEngine.h"
+#endif /* ENABLE_ELUNA */
 #include "ChannelMgr.h"
 #include "MapManager.h"
 #include "MapPersistentStateMgr.h"
@@ -149,6 +153,9 @@ Player::Player(WorldSession* session) : Unit(),
 
     m_zoneUpdateId = 0;
     m_zoneUpdateTimer = 0;
+#ifdef ENABLE_ELUNA
+    m_elunaBoostTimer = 0;
+#endif
 
     m_areaUpdateId = 0;
 
@@ -1085,6 +1092,22 @@ void Player::Update(uint32 update_diff, uint32 p_time)
         return;
 
     UpdateMirrorTimers(update_diff);
+
+#ifdef ENABLE_ELUNA
+    if (Eluna* e = GetEluna())
+    {
+        uint32 boostInterval = sWorld.getConfig(CONFIG_UINT32_ELUNA_PLAYER_BOOST_INTERVAL);
+        if (boostInterval > 0)
+        {
+            m_elunaBoostTimer += p_time;
+            if (m_elunaBoostTimer >= boostInterval)
+            {
+                m_elunaBoostTimer = 0;
+                e->OnBoost(this);
+            }
+        }
+    }
+#endif
 
     //used to implement delayed far teleports
     SetCanDelayTeleport(true);
@@ -6711,7 +6734,7 @@ void Player::UpdateArea(uint32 newArea)
     {
         // remove ffa flag only if not ffapvp realm
         // removal in sanctuaries and capitals is handled in zone update
-        if (IsFFAPvP() && !sWorld.IsFFAPvPRealm())
+        if (IsFFAPvP() && !sWorld.IsFFAPvPRealm() && !HasScriptFFAPvP())
             SetFFAPvP(false);
     }
 
@@ -17438,6 +17461,9 @@ void Player::SetPvPDesired(bool state)
 
 void Player::SetFFAPvP(bool state)
 {
+    if (!state)
+        pvpInfo.scriptFFAPvP = false;
+
     if (state)
         SetFlag(PLAYER_FLAGS, PLAYER_FLAGS_FFA_PVP);
     else
@@ -17445,6 +17471,12 @@ void Player::SetFFAPvP(bool state)
 
     if (GetGroup())
         SetGroupUpdateFlag(GROUP_UPDATE_FLAG_STATUS);
+}
+
+void Player::SetScriptFFAPvP(bool state)
+{
+    pvpInfo.scriptFFAPvP = state;
+    SetFFAPvP(state);
 }
 
 bool Player::IsInInterFactionMode() const
@@ -18326,7 +18358,25 @@ bool Player::ActivateTaxiPathTo(std::vector<uint32> const& nodes, Creature const
     data << uint32(ERR_TAXIOK);
     GetSession()->SendPacket(&data);
 
+#ifdef ENABLE_ELUNA
+    if (Eluna* e = GetEluna())
+    {
+        uint32 onfight = sConfig.GetIntDefault("PLAYER_EVENT_ON_FIGHT", 1);
+        bool onf = e->OnFight(this);
+        sLog.Out(LOG_BASIC, LOG_LVL_ERROR, "Eluna PLAYER_EVENT_ON_FIGHT %s, onfight=%u, onf=%u", GetName(), onfight, onf);
+
+        if (onfight == 1 && onf)
+        {
+            TaxiNodesEntry const* lastnode = sObjectMgr.GetTaxiNodeEntry(nodes[nodes.size() - 1]);
+            m_taxi.ClearTaxiDestinations();
+            TeleportTo(lastnode->map_id, lastnode->x, lastnode->y, lastnode->z, GetOrientation());
+            return true;
+        }
+    }
     GetSession()->SendDoFlight(mount_display_id, sourcepath);
+#else
+    GetSession()->SendDoFlight(mount_display_id, sourcepath);
+#endif
 
     return true;
 }
