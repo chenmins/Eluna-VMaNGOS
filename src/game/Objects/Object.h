@@ -819,6 +819,11 @@ class WorldObject : public Object
 
         std::unique_ptr<ElunaEventProcessor>& GetElunaEvents(int32 mapId) { return (mapId == -1) ? elunaWorldEvents : elunaMapEvents; }
 
+        // Explicitly clear any active Eluna event processors. This is useful before a map is
+        // destroyed (e.g. the last battleground player leaves) to avoid destructing with a
+        // dangling Eluna pointer later in SetMap when teleport acknowledgements arrive.
+        void ClearElunaEventProcessors();
+
         LuaVal lua_data = LuaVal({});
 #endif 
     protected:

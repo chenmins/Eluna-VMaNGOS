@@ -2657,6 +2657,11 @@ PvP.PoolSizePerFaction = 0
 #        Default: 1 (enable)
 #                 0 (disable)
 #
+#    Battleground.MixedFaction
+#        Allow mixed-faction battlegrounds with team balancing and faction overrides
+#        Default: 0 (disable)
+#                 1 (enable)
+#
 #    Battleground.QueueAnnouncer.Join
 #        Send global notifications when any player joins a battleground queue
 #        Default: 0 (not send)
@@ -2708,6 +2713,7 @@ PvP.PoolSizePerFaction = 0
 ###################################################################################################################
 
 Battleground.CastDeserter = 1
+Battleground.MixedFaction = 0
 Battleground.QueueAnnouncer.Join = 0
 Battleground.QueueAnnouncer.Start = 0
 Battleground.InvitationType = 1
