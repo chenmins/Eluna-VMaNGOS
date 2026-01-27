@@ -576,6 +576,38 @@ void BattleGround::RewardReputationToTeam(uint32 factionId, uint32 reputation, T
     if (!factionEntry)
         return;
 
+    FactionEntry const* oppositeFactionEntry = nullptr;
+    if (sWorld.getConfig(CONFIG_BOOL_BATTLEGROUND_MIXED_FACTION))
+    {
+        // Determine opposing faction for mirrored battleground reputations
+        uint32 oppositeFactionId = 0;
+        switch (factionId)
+        {
+            case 729:
+                oppositeFactionId = 730;
+                break;
+            case 730:
+                oppositeFactionId = 729;
+                break;
+            case 889:
+                oppositeFactionId = 890;
+                break;
+            case 890:
+                oppositeFactionId = 889;
+                break;
+            case 509:
+                oppositeFactionId = 510;
+                break;
+            case 510:
+                oppositeFactionId = 509;
+                break;
+            default:
+                break;
+        }
+
+        oppositeFactionEntry = oppositeFactionId ? sObjectMgr.GetFactionEntry(oppositeFactionId) : nullptr;
+    }
+
     for (const auto& itr : m_players)
     {
         Player* pPlayer = sObjectMgr.GetPlayer(itr.first);
@@ -593,7 +625,13 @@ void BattleGround::RewardReputationToTeam(uint32 factionId, uint32 reputation, T
         {
             int32 rep_change;
             rep_change = pPlayer->CalculateReputationGain(REPUTATION_SOURCE_SPELL, reputation, factionId);
-            pPlayer->GetReputationMgr().ModifyReputation(factionEntry, rep_change);
+            FactionEntry const* targetFaction = factionEntry;
+
+            // If the player's active team differs from their racial team, reward the mirrored faction instead
+            if (oppositeFactionEntry && pPlayer->GetTeam() != Player::TeamForRace(pPlayer->GetRace()))
+                targetFaction = oppositeFactionEntry;
+
+            pPlayer->GetReputationMgr().ModifyReputation(targetFaction, rep_change);
         }
     }
 }
@@ -900,6 +938,18 @@ void BattleGround::BlockMovement(Player* pPlayer)
 void BattleGround::RemovePlayerAtLeave(ObjectGuid guid, bool transport, bool sendPacket)
 {
     Team team = GetPlayerTeam(guid);
+    Player* pPlayer = sObjectMgr.GetPlayer(guid);
+
+    if (team == TEAM_NONE && pPlayer)
+    {
+        team = pPlayer->GetBGTeam();
+        if (team == TEAM_NONE)
+            team = Player::TeamForRace(pPlayer->GetRace());
+
+        sLog.Out(LOG_BG, LOG_LVL_ERROR, "BATTLEGROUND: RemovePlayerAtLeave missing team for %s, defaulting to %u (BGTeam=%u)", pPlayer->GetName(), team, pPlayer->GetBGTeam());
+    }
+
+    sLog.Out(LOG_BG, LOG_LVL_DEBUG, "BATTLEGROUND: RemovePlayerAtLeave start for %s (team=%u, transport=%u, sendPacket=%u, players=%zu)", guid.GetString().c_str(), team, transport, sendPacket, m_players.size());
     bool participant = false;
     // Remove from lists/maps
     BattleGroundPlayerMap::iterator itr = m_players.find(guid);
@@ -909,6 +959,9 @@ void BattleGround::RemovePlayerAtLeave(ObjectGuid guid, bool transport, bool sen
         m_players.erase(itr);
         // check if the player was a participant of the match, or only entered through gm command (goname)
         participant = true;
+
+        if (m_players.empty())
+            sLog.Out(LOG_BG, LOG_LVL_DEBUG, "BATTLEGROUND: RemovePlayerAtLeave detected last player %s leaving instance %u", guid.GetString().c_str(), GetInstanceID());
     }
 
     BattleGroundScoreMap::iterator itr2 = m_playerScores.find(guid);
@@ -917,8 +970,6 @@ void BattleGround::RemovePlayerAtLeave(ObjectGuid guid, bool transport, bool sen
         delete itr2->second;                                // delete player's score
         m_playerScores.erase(itr2);
     }
-
-    Player* pPlayer = sObjectMgr.GetPlayer(guid);
 
     // should remove spirit of redemption
     if (pPlayer && pPlayer->HasAuraType(SPELL_AURA_SPIRIT_OF_REDEMPTION))
@@ -984,6 +1035,8 @@ void BattleGround::RemovePlayerAtLeave(ObjectGuid guid, bool transport, bool sen
         // reset destination bg team
         pPlayer->SetBGTeam(TEAM_NONE);
 
+        sLog.Out(LOG_BG, LOG_LVL_DEBUG, "BATTLEGROUND: RemovePlayerAtLeave finish for %s (team=%u, remainingPlayers=%zu)", guid.GetString().c_str(), team, m_players.size());
+
         if (transport && pPlayer->FindMap() == GetBgMap())
             pPlayer->TeleportToBGEntryPoint();
 
@@ -1039,6 +1092,32 @@ void BattleGround::StartBattleGround()
 
 void BattleGround::AddPlayer(Player* pPlayer)
 {
+    if (pPlayer->GetBGTeam() == TEAM_NONE)
+        pPlayer->SetBGTeam(pPlayer->GetTeam());
+
+    if (sWorld.getConfig(CONFIG_BOOL_BATTLEGROUND_MIXED_FACTION))
+    {
+        // Enter battleground with team balancing to allow mixed factions
+        uint32 hordePlayers = GetPlayersCountByTeam(HORDE);
+        uint32 alliancePlayers = GetPlayersCountByTeam(ALLIANCE);
+
+        Team targetTeam = pPlayer->GetBGTeam();
+        if (hordePlayers < alliancePlayers)
+        {
+            targetTeam = HORDE;
+            pPlayer->SetBGTeam(HORDE);
+        }
+        else if (hordePlayers > alliancePlayers)
+        {
+            targetTeam = ALLIANCE;
+            pPlayer->SetBGTeam(ALLIANCE);
+        }
+
+        sLog.Out(LOG_BG, LOG_LVL_DEBUG, "BATTLEGROUND: AddPlayer balancing %s (queuedTeam=%u, targetTeam=%u, counts H:%u A:%u)", pPlayer->GetName(), pPlayer->GetBGTeam(), targetTeam, hordePlayers, alliancePlayers);
+
+        pPlayer->OverrideTeamAndFactionForBattleGround(targetTeam);
+    }
+
     // score struct must be created in inherited class
 
     ObjectGuid guid = pPlayer->GetObjectGuid();

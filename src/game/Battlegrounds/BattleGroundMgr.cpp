@@ -151,6 +151,28 @@ GroupQueueInfo* BattleGroundQueue::AddGroup(Player* leader, Group* grp, BattleGr
     ginfo->joinTime                  = WorldTimer::getMSTime();
     ginfo->removeInviteTime          = 0;
     ginfo->groupTeam                 = leader->GetTeam();
+
+    if (sWorld.getConfig(CONFIG_BOOL_BATTLEGROUND_MIXED_FACTION))
+    {
+        // Adjust queued team to keep battleground queues balanced
+        uint32 queuedHordePlayers = 0;
+        uint32 queuedAlliancePlayers = 0;
+
+        GroupsQueueType::const_iterator itr;
+        for (itr = m_queuedGroups[bracketId][BG_QUEUE_NORMAL_ALLIANCE].begin(); itr != m_queuedGroups[bracketId][BG_QUEUE_NORMAL_ALLIANCE].end(); ++itr)
+            if (!(*itr)->isInvitedToBgInstanceGuid)
+                queuedAlliancePlayers += (*itr)->players.size();
+
+        for (itr = m_queuedGroups[bracketId][BG_QUEUE_NORMAL_HORDE].begin(); itr != m_queuedGroups[bracketId][BG_QUEUE_NORMAL_HORDE].end(); ++itr)
+            if (!(*itr)->isInvitedToBgInstanceGuid)
+                queuedHordePlayers += (*itr)->players.size();
+
+        if (queuedHordePlayers != queuedAlliancePlayers)
+            ginfo->groupTeam = (queuedAlliancePlayers > queuedHordePlayers) ? HORDE : ALLIANCE;
+
+        sLog.Out(LOG_BG, LOG_LVL_DEBUG, "BATTLEGROUND: AddGroup queue balance for leader %s (team=%u -> %u, queued H:%u A:%u)", leader->GetName(), leader->GetTeam(), ginfo->groupTeam, queuedHordePlayers, queuedAlliancePlayers);
+    }
+
     ginfo->desiredInstanceId         = instanceId;
     ginfo->players.clear();
 
