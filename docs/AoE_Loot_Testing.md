@@ -443,6 +443,23 @@ AoELoot.MaxCorpses = 20
 
 ---
 
+### Test 23: Reopen After Closing Without Looting
+
+**Objective**: Verify that opening an AoE loot window does not itself consume the source corpses' loot.
+
+**Steps**:
+1. Kill 3 creatures within `AoELoot.Range`, each with ordinary items or gold.
+2. Open corpse A and confirm that loot from corpses B and C appears in the merged window.
+3. Take no item or gold, then close the loot window.
+4. Attempt to reopen corpses A, B, and C.
+
+**Expected**: All three corpses remain lootable; their combined loot equals the loot before step 2, with no duplication or loss. After taking any item or gold from A's merged window, only then are merged source corpses marked looted.
+
+**Regression basis**: Before this fix, step 2 immediately cleared B/C and removed their lootable flags, so step 4 failed.
+
+**Status**: ⬜ Pass ⬜ Fail
+
+---
 ## Testing Checklist
 
 Before declaring the feature production-ready, verify:
@@ -481,7 +498,7 @@ When reporting bugs, include:
 
 ## Test Results Summary
 
-Total Tests: 22
+Total Tests: 23
 - Passed: ___
 - Failed: ___
 - Not Tested: ___
