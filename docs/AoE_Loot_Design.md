@@ -91,7 +91,7 @@ Enhanced to include AoE loot logic:
    - Merges loot from found corpses:
      - Combines gold amounts (with overflow protection)
      - Copies items (respecting MAX_NR_LOOT_ITEMS limit)
-   - Clears merged corpses and removes their loot flags
+   - Creates a temporary merged view; source corpses remain unchanged until an item or gold is actually taken
 3. Sends the merged loot window to the player
 
 ### Loot Merging Process
@@ -103,7 +103,8 @@ Enhanced to include AoE loot logic:
 5. **Merge**: 
    - Gold amounts are summed (with overflow protection)
    - Items are copied to main loot window (up to item limit)
-   - Source corpses are cleared and marked as looted
+   - Closing without looting rolls back the temporary merge and preserves source corpses
+   - Taking any item or gold commits the merge and clears the source corpses
 6. **Display**: Merged loot window is shown to the player
 
 ### Safety Features
