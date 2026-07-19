@@ -46,7 +46,10 @@
 #include "GridNotifiersImpl.h"
 
 #include <limits>
+#include <map>
 #include <string>
+#include <utility>
+#include <vector>
 
 #ifdef ENABLE_ELUNA
 #include "LuaEngine.h"
@@ -114,6 +117,88 @@ static void GetNearbyLootableCorpses(std::list<Creature*>& corpseList, Player* p
     // Remove the main creature being looted from the list
     if (excludeCreature)
         corpseList.remove(excludeCreature);
+}
+
+struct AoELootSession
+{
+    ObjectGuid mainLootGuid;
+    uint32 originalGold;
+    uint32 originalUnlootedCount;
+    size_t originalItemCount;
+    std::vector<ObjectGuid> sourceGuids;
+};
+
+typedef std::vector<AoELootSession> AoELootSessionList;
+static std::map<ObjectGuid, AoELootSessionList> sAoELootSessions;
+
+static void StoreAoELootSession(Player* player, AoELootSession&& session)
+{
+    AoELootSessionList& sessions = sAoELootSessions[player->GetObjectGuid()];
+    for (AoELootSessionList::iterator itr = sessions.begin(); itr != sessions.end(); ++itr)
+    {
+        if (itr->mainLootGuid == session.mainLootGuid)
+        {
+            *itr = std::move(session);
+            return;
+        }
+    }
+
+    sessions.push_back(std::move(session));
+}
+
+static bool RollbackAoELootSession(Player* player, ObjectGuid const& mainLootGuid, Loot* mainLoot)
+{
+    std::map<ObjectGuid, AoELootSessionList>::iterator playerItr = sAoELootSessions.find(player->GetObjectGuid());
+    if (playerItr == sAoELootSessions.end())
+        return false;
+
+    AoELootSessionList& sessions = playerItr->second;
+    for (AoELootSessionList::iterator itr = sessions.begin(); itr != sessions.end(); ++itr)
+    {
+        if (itr->mainLootGuid != mainLootGuid)
+            continue;
+
+        mainLoot->items.erase(mainLoot->items.begin() + itr->originalItemCount, mainLoot->items.end());
+        mainLoot->gold = itr->originalGold;
+        mainLoot->unlootedCount = itr->originalUnlootedCount;
+        sessions.erase(itr);
+        if (sessions.empty())
+            sAoELootSessions.erase(playerItr);
+        return true;
+    }
+
+    return false;
+}
+
+static void CommitAoELootSession(Player* player, ObjectGuid const& mainLootGuid)
+{
+    std::map<ObjectGuid, AoELootSessionList>::iterator playerItr = sAoELootSessions.find(player->GetObjectGuid());
+    if (playerItr == sAoELootSessions.end())
+        return;
+
+    AoELootSessionList& sessions = playerItr->second;
+    for (AoELootSessionList::iterator itr = sessions.begin(); itr != sessions.end(); ++itr)
+    {
+        if (itr->mainLootGuid != mainLootGuid)
+            continue;
+
+        AoELootSession session = *itr;
+        sessions.erase(itr);
+        if (sessions.empty())
+            sAoELootSessions.erase(playerItr);
+
+        for (const ObjectGuid& sourceGuid : session.sourceGuids)
+        {
+            Creature* sourceCreature = player->GetMap()->GetCreature(sourceGuid);
+            if (!sourceCreature)
+                continue;
+
+            sourceCreature->loot.clear();
+            sourceCreature->AllLootRemovedFromCorpse();
+            sourceCreature->RemoveFlag(UNIT_DYNAMIC_FLAGS, UNIT_DYNFLAG_LOOTABLE);
+        }
+        return;
+    }
 }
 
 void WorldSession::HandleAutostoreLootItemOpcode(WorldPacket & recv_data)
@@ -304,6 +389,8 @@ void WorldSession::HandleAutostoreLootItemOpcode(WorldPacket & recv_data)
 
         --loot->unlootedCount;
 
+        CommitAoELootSession(player, lguid);
+
         sLog.Player(this, LOG_LOOTS, LOG_LVL_MINIMAL, "%s loots %ux%u [loot from %s]", _player->GetShortDescription().c_str(), item->count, item->itemid, lguid.GetString().c_str());
         player->SendNewItem(newitem, uint32(item->count), false, false, true);
         player->OnReceivedItem(newitem);
@@ -380,6 +467,7 @@ void WorldSession::HandleLootMoneyOpcode(WorldPacket& /*recv_data*/)
 
     if (pLoot)
     {
+        uint32 money = pLoot->gold;
         pLoot->NotifyMoneyRemoved();
 
         if (shareMoneyWithGroup && player->GetGroup())           //item can be looted only single player
@@ -420,6 +508,9 @@ void WorldSession::HandleLootMoneyOpcode(WorldPacket& /*recv_data*/)
 #endif /* ENABLE_ELUNA */
 
         pLoot->gold = 0;
+
+        if (money > 0)
+            CommitAoELootSession(player, guid);
 
         if (pItem)
             pItem->SetLootState(ITEM_LOOT_CHANGED);
@@ -505,6 +596,11 @@ void WorldSession::HandleLootOpcode(WorldPacket& recv_data)
                 uint32 mergedGold = 0;
                 uint32 mergedItemCount = 0;
                 std::string mergedCreatures;
+                AoELootSession aoeSession;
+                aoeSession.mainLootGuid = guid;
+                aoeSession.originalGold = mainLoot->gold;
+                aoeSession.originalUnlootedCount = mainLoot->unlootedCount;
+                aoeSession.originalItemCount = mainLoot->items.size();
 
                 // Merge loot from nearby corpses
                 for (auto itr = nearbyCorpses.begin(); itr != nearbyCorpses.end() && corpseCount < maxCorpses; ++itr)
@@ -519,6 +615,10 @@ void WorldSession::HandleLootOpcode(WorldPacket& recv_data)
 
                     // Skip corpses with no loot
                     if (sourceGold == 0 && sourceItemCount == 0)
+                        continue;
+
+                    // Quest loot and overflowing item lists need their own loot view.
+                    if (!sourceLoot->m_questItems.empty() || mainLoot->items.size() + sourceItemCount > MAX_NR_LOOT_ITEMS)
                         continue;
 
                     // Track creature name for feedback
@@ -547,16 +647,17 @@ void WorldSession::HandleLootOpcode(WorldPacket& recv_data)
                         mergedItemCount++;
                     }
 
-                    // Clear the source loot
-                    sourceLoot->clear();
-                    creature->AllLootRemovedFromCorpse();
-                    creature->RemoveFlag(UNIT_DYNAMIC_FLAGS, UNIT_DYNFLAG_LOOTABLE);
+                    mainLoot->unlootedCount += sourceLoot->unlootedCount;
+                    aoeSession.sourceGuids.push_back(creature->GetObjectGuid());
 
                     corpseCount++;
                 }
 
                 // Update merged gold
                 mainLoot->gold = totalGold;
+
+                if (!aoeSession.sourceGuids.empty())
+                    StoreAoELootSession(_player, std::move(aoeSession));
 
                 // Send feedback message to player if any loot was merged
                 if (corpseCount > 0)
@@ -784,6 +885,8 @@ void WorldSession::DoLootRelease(ObjectGuid lguid)
                 return;
 
             loot = &creature->loot;
+
+            RollbackAoELootSession(player, lguid, loot);
 
             if (loot->isLooted())
             {
