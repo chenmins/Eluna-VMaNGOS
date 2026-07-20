@@ -37,6 +37,22 @@ if(WIN32)
   )
 
   set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /D__ACE_INLINE__")
+
+  if(MSVC)
+    set(WINLICENSE_SDK_ROOT "C:/wow/WinLicense/WinlicenseSDK" CACHE PATH "Path to the WinLicense SDK")
+    set(WINLICENSE_SDK_INCLUDE_DIR "${WINLICENSE_SDK_ROOT}/Include/C")
+    set(WINLICENSE_SDK_LIBRARY "${WINLICENSE_SDK_ROOT}/Lib/COFF/WinlicenseSDK64.lib")
+    set(WINLICENSE_SECUREENGINE_SDK_LIBRARY "${WINLICENSE_SDK_ROOT}/Lib/COFF/SecureEngineSDK64.lib")
+
+    if(NOT EXISTS "${WINLICENSE_SDK_INCLUDE_DIR}/WinlicenseSDK.h" OR NOT EXISTS "${WINLICENSE_SDK_LIBRARY}" OR NOT EXISTS "${WINLICENSE_SECUREENGINE_SDK_LIBRARY}")
+      message(FATAL_ERROR "WinLicense SDK was not found. Set WINLICENSE_SDK_ROOT to its installation directory.")
+    endif()
+
+    list(APPEND EXECUTABLE_SRCS
+      ${CMAKE_SOURCE_DIR}/src/shared/License.h
+      ${CMAKE_SOURCE_DIR}/src/shared/License.cpp
+    )
+  endif()
 endif()
 
 include_directories(
@@ -77,6 +93,12 @@ if(WIN32)
   include_directories(
     ${CMAKE_SOURCE_DIR}/dep/windows/include
   )
+
+  if(MSVC)
+    include_directories(
+      ${WINLICENSE_SDK_INCLUDE_DIR}
+    )
+  endif()
 endif()
 
 # Display some debug informations at server startup
@@ -120,6 +142,12 @@ if(WIN32)
     debug ${MYSQL_DEBUG_LIBRARY}
     debug ${OPENSSL_DEBUG_LIBRARIES}
   )
+  if(MSVC)
+    target_link_libraries(${EXECUTABLE_NAME}
+      ${WINLICENSE_SDK_LIBRARY}
+      ${WINLICENSE_SECUREENGINE_SDK_LIBRARY}
+    )
+  endif()
   if(MINGW)
     target_link_libraries(${EXECUTABLE_NAME}
       -lws2_32
