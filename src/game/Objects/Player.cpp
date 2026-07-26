@@ -15161,6 +15161,14 @@ bool Player::LoadFromDB(ObjectGuid guid, SqlQueryHolder* holder)
 
     _LoadSpells(holder->TakeResult(PLAYER_LOGIN_QUERY_LOADSPELLS));
 
+    // Load extra talent points before InitTalentForLevel so they are included in talent calculations
+    std::unique_ptr<QueryResult> extraTalentResult = CharacterDatabase.PQuery("SELECT extra_points FROM character_extra_talent_points WHERE guid = %u", GetGUIDLow());
+    if (extraTalentResult)
+    {
+        Field* extraFields = extraTalentResult->Fetch();
+        m_extraTalentPoints = extraFields[0].GetUInt32();
+    }
+
     // after spell load
     InitTalentForLevel();
     LearnDefaultSpells();
@@ -15339,14 +15347,6 @@ bool Player::LoadFromDB(ObjectGuid guid, SqlQueryHolder* holder)
 
     if ((extraflags & PLAYER_EXTRA_CITY_PROTECTOR) && sWorld.getConfig(CONFIG_BOOL_ENABLE_CITY_PROTECTOR))
         SetCityTitle();
-
-    // Load extra talent points
-    std::unique_ptr<QueryResult> extraTalentResult = CharacterDatabase.PQuery("SELECT extra_points FROM character_extra_talent_points WHERE guid = %u", GetGUIDLow());
-    if (extraTalentResult)
-    {
-        Field* extraFields = extraTalentResult->Fetch();
-        m_extraTalentPoints = extraFields[0].GetUInt32();
-    }
 
     sBattleGroundMgr.PlayerLoggedIn(this); // Add to BG queue if needed
     CreatePacketBroadcaster();
