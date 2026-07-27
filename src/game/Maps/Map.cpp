@@ -219,7 +219,6 @@ Map::Map(uint32 id, time_t expiry, uint32 InstanceId)
             m_elunaInfo = {ElunaInfoKey::MakeKey(GetId(), GetInstanceId())};
             sElunaMgr->Create(this, m_elunaInfo);
         }
-
     if (Eluna* e = GetEluna())
         e->OnCreate(this);
 #endif
