@@ -30,7 +30,10 @@ ElunaEventProcessor::~ElunaEventProcessor()
         RemoveEvents_internal();
     }
 
-    if (obj)
+    // EventMgr can be destroyed before WorldObject releases its processor.
+    // In that case EventMgr clears the events and detaches E first, so do not
+    // access the already-destroyed EventMgr through a stale Eluna pointer.
+    if (obj && E)
         E->eventMgr->processors.erase(this);
 }
 
@@ -122,7 +125,12 @@ EventMgr::~EventMgr()
 {
     if (!processors.empty())
         for (ProcessorSet::const_iterator it = processors.begin(); it != processors.end(); ++it) // loop processors
+        {
             (*it)->RemoveEvents_internal();
+            (*it)->E = nullptr;
+        }
+
+    processors.clear();
     globalProcessor->RemoveEvents_internal();
 }
 
